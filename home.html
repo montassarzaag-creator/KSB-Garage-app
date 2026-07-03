@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSB Garage Manager — Accueil</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1A1A18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --charbon: #1A1A18;
+    --charbon-clair: #26251F;
+    --blanc-chaud: #F7F5F2;
+    --carte: #FFFFFF;
+    --ambre: #E85D25;
+    --ambre-fonce: #C2410C;
+    --bleu-acier: #185FA5;
+    --graphite: #6B6A63;
+    --bordure: #E7E4DA;
+    --vert: #2E8B57;
+    --erreur: #D64545;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--blanc-chaud);
+    color: var(--charbon);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--charbon);
+    color: var(--blanc-chaud);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .marque-entete {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .marque-entete .badge {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: conic-gradient(from 200deg, transparent 0deg, transparent 30deg, var(--ambre) 40deg, var(--ambre-fonce) 90deg, transparent 100deg, transparent 360deg);
+    -webkit-mask: radial-gradient(circle at center, transparent 48%, black 49%, black 62%, transparent 63%);
+            mask: radial-gradient(circle at center, transparent 48%, black 49%, black 62%, transparent 63%);
+  }
+  .marque-entete .texte {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: 0.01em;
+  }
+  .marque-entete .texte span { color: var(--ambre); }
+
+  .zone-utilisateur {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+  }
+  #indicateurReseau {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.08);
+  }
+  #indicateurReseau .point {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--vert);
+  }
+  #indicateurReseau.hors-ligne .point { background: var(--erreur); }
+  #indicateurReseau.hors-ligne { background: rgba(214, 69, 69, 0.18); }
+
+  #emailUtilisateur { color: #C8C6BE; }
+
+  .bouton-deconnexion {
+    background: transparent;
+    border: 1.5px solid #4A4941;
+    color: var(--blanc-chaud);
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .bouton-deconnexion:hover { border-color: var(--ambre); background: rgba(232, 93, 37, 0.08); }
+  .bouton-deconnexion:focus-visible { outline: 2px solid var(--bleu-acier); outline-offset: 2px; }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 40px 32px 64px; }
+
+  .en-tete-page { margin-bottom: 32px; }
+  .en-tete-page .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ambre-fonce);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .en-tete-page h1 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 30px;
+  }
+
+  .grille-modules {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .carte-module {
+    background: var(--carte);
+    border: 1px solid var(--bordure);
+    border-radius: 12px;
+    padding: 20px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    position: relative;
+  }
+  .carte-module:hover {
+    border-color: var(--ambre);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(26,26,24,0.08);
+  }
+  .carte-module:focus-visible { outline: 3px solid var(--bleu-acier); outline-offset: 2px; }
+
+  .carte-module .icone {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px;
+    background: #FBEFE8;
+  }
+  .carte-module .nom {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+  }
+  .carte-module .compteur {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--graphite);
+  }
+  .carte-module.a-venir { opacity: 0.55; }
+  .carte-module.a-venir::after {
+    content: "Bientôt";
+    position: absolute;
+    top: 14px; right: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--charbon);
+    color: var(--blanc-chaud);
+    padding: 3px 7px;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="marque-entete">
+      <div class="badge"></div>
+      <div class="texte">KSB <span>Garage</span></div>
+    </div>
+    <div class="zone-utilisateur">
+      <span id="indicateurReseau"><span class="point"></span><span id="texteReseau">En ligne</span></span>
+      <span id="emailUtilisateur"></span>
+      <button class="bouton-deconnexion" id="boutonDeconnexion">Déconnexion</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="en-tete-page">
+      <span class="eyebrow">Tableau de bord</span>
+      <h1>Bienvenue</h1>
+    </div>
+
+    <div class="grille-modules" id="grilleModules"></div>
+  </main>
+
+  <script type="module">
+    import { protegerPage, deconnecter, surChangementAuth, surChangementReseau } from './shared.js';
+
+    protegerPage();
+
+    surChangementAuth((utilisateur) => {
+      if (utilisateur) {
+        document.getElementById('emailUtilisateur').textContent = utilisateur.email;
+      }
+    });
+
+    document.getElementById('boutonDeconnexion').addEventListener('click', async () => {
+      await deconnecter();
+      window.location.href = 'login.html';
+    });
+
+    surChangementReseau((enLigne) => {
+      const indicateur = document.getElementById('indicateurReseau');
+      const texte = document.getElementById('texteReseau');
+      if (enLigne) {
+        indicateur.classList.remove('hors-ligne');
+        texte.textContent = 'En ligne';
+      } else {
+        indicateur.classList.add('hors-ligne');
+        texte.textContent = 'Hors ligne — lecture seule sur le cache';
+      }
+    });
+
+    // Liste des modules. "lien: null" = pas encore développé (affiché en "Bientôt").
+    const modules = [
+      { nom: 'Admission',            icone: '🚗', lien: null },
+      { nom: 'Dossiers véhicules',   icone: '📂', lien: null },
+      { nom: 'Clients',              icone: '👤', lien: null },
+      { nom: 'Véhicules',            icone: '🚙', lien: null },
+      { nom: 'Devis',                icone: '📝', lien: null },
+      { nom: 'Factures',             icone: '💵', lien: null },
+      { nom: 'Atelier',              icone: '🔧', lien: null },
+      { nom: 'Planning',             icone: '📅', lien: null },
+      { nom: 'Magasin / Stock',      icone: '📦', lien: null },
+      { nom: 'Achats fournisseurs',  icone: '🛒', lien: null },
+      { nom: 'Caisse',               icone: '💰', lien: null },
+      { nom: 'Tableau de bord',      icone: '📊', lien: null },
+      { nom: 'Paramètres',           icone: '⚙️', lien: null }
+    ];
+
+    const grille = document.getElementById('grilleModules');
+    modules.forEach((module) => {
+      const carte = document.createElement(module.lien ? 'a' : 'div');
+      carte.className = 'carte-module' + (module.lien ? '' : ' a-venir');
+      if (module.lien) { carte.href = module.lien; }
+      carte.innerHTML = `
+        <div class="icone">${module.icone}</div>
+        <div class="nom">${module.nom}</div>
+        <div class="compteur">—</div>
+      `;
+      grille.appendChild(carte);
+    });
+  </script>
+</body>
+</html>
