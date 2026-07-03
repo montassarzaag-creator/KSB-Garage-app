@@ -1,6 +1,6 @@
 {
   "name": "KSB Garage Manager",
-  "short_name": "KSB Garage",
+  "short_name": "KSB Garage ",
   "start_url": "home.html",
   "display": "standalone",
   "background_color": "#1A1A18",
