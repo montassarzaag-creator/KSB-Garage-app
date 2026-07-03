@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSB Garage Manager — Connexion</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1A1A18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --charbon: #1A1A18;
+    --charbon-clair: #26251F;
+    --blanc-chaud: #F7F5F2;
+    --ambre: #E85D25;
+    --ambre-fonce: #C2410C;
+    --bleu-acier: #185FA5;
+    --graphite: #6B6A63;
+    --erreur: #D64545;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', sans-serif;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    min-height: 100vh;
+    background: var(--blanc-chaud);
+  }
+
+  /* ---- Panneau gauche : identité ---- */
+  .panneau-identite {
+    position: relative;
+    background: var(--charbon);
+    color: var(--blanc-chaud);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 56px 64px;
+    overflow: hidden;
+  }
+  .panneau-identite::before {
+    content: "";
+    position: absolute;
+    inset: -20% -10% auto auto;
+    width: 640px;
+    height: 640px;
+    border-radius: 50%;
+    background:
+      conic-gradient(from 200deg,
+        transparent 0deg, transparent 30deg,
+        var(--ambre) 40deg, var(--ambre-fonce) 90deg,
+        transparent 100deg, transparent 360deg);
+    filter: blur(2px);
+    opacity: 0.9;
+    -webkit-mask: radial-gradient(circle at center, transparent 55%, black 56%, black 62%, transparent 63%);
+            mask: radial-gradient(circle at center, transparent 55%, black 56%, black 62%, transparent 63%);
+    animation: tourner 40s linear infinite;
+  }
+  @keyframes tourner {
+    to { transform: rotate(360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panneau-identite::before { animation: none; }
+  }
+
+  .marque { position: relative; z-index: 1; }
+  .marque .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ambre);
+    margin-bottom: 18px;
+    display: block;
+  }
+  .marque h1 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 46px;
+    letter-spacing: 0.01em;
+    line-height: 1.05;
+  }
+  .marque h1 span { color: var(--ambre); }
+
+  .panneau-identite .base {
+    position: relative;
+    z-index: 1;
+  }
+  .panneau-identite .base p {
+    font-size: 14px;
+    color: #C8C6BE;
+    line-height: 1.6;
+    max-width: 34ch;
+  }
+  .panneau-identite .base .ligne {
+    width: 40px;
+    height: 3px;
+    background: var(--ambre);
+    margin-bottom: 20px;
+    border-radius: 2px;
+  }
+
+  /* ---- Panneau droit : formulaire ---- */
+  .panneau-form {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .carte-form {
+    width: 100%;
+    max-width: 380px;
+  }
+  .carte-form h2 {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 26px;
+    color: var(--charbon);
+    margin-bottom: 6px;
+  }
+  .carte-form .sous-titre {
+    font-size: 14px;
+    color: var(--graphite);
+    margin-bottom: 32px;
+  }
+
+  .champ { margin-bottom: 18px; }
+  .champ label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--graphite);
+    margin-bottom: 7px;
+  }
+  .champ input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid #DEDBD2;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    background: #FFFFFF;
+    color: var(--charbon);
+    transition: border-color 0.15s ease;
+  }
+  .champ input:focus {
+    outline: none;
+    border-color: var(--bleu-acier);
+    box-shadow: 0 0 0 3px rgba(24, 95, 165, 0.14);
+  }
+
+  .bouton-connexion {
+    width: 100%;
+    padding: 13px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--ambre) 0%, var(--ambre-fonce) 100%);
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.05s ease;
+  }
+  .bouton-connexion:hover { filter: brightness(1.06); }
+  .bouton-connexion:active { transform: translateY(1px); }
+  .bouton-connexion:disabled { opacity: 0.6; cursor: not-allowed; }
+  .bouton-connexion:focus-visible { outline: 3px solid var(--bleu-acier); outline-offset: 2px; }
+
+  .message-erreur {
+    display: none;
+    align-items: flex-start;
+    gap: 8px;
+    background: #FDEEEE;
+    border: 1px solid #F3C6C6;
+    color: var(--erreur);
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    line-height: 1.4;
+  }
+  .message-erreur.visible { display: flex; }
+
+  .pied-form {
+    margin-top: 28px;
+    font-size: 12px;
+    color: var(--graphite);
+    text-align: center;
+  }
+
+  @media (max-width: 860px) {
+    body { grid-template-columns: 1fr; }
+    .panneau-identite { padding: 40px 32px 60px; }
+    .marque h1 { font-size: 34px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="panneau-identite">
+    <div class="marque">
+      <span class="eyebrow">Atelier de réparation automobile</span>
+      <h1>KSB<br><span>Garage</span> Manager</h1>
+    </div>
+    <div class="base">
+      <div class="ligne"></div>
+      <p>Réception, devis, atelier, facturation et stock — un seul outil pour suivre chaque véhicule du premier diagnostic à la livraison.</p>
+    </div>
+  </div>
+
+  <div class="panneau-form">
+    <div class="carte-form">
+      <h2>Connexion</h2>
+      <p class="sous-titre">Accédez à votre espace de gestion</p>
+
+      <div class="message-erreur" id="messageErreur"></div>
+
+      <form id="formConnexion" novalidate>
+        <div class="champ">
+          <label for="email">Adresse e-mail</label>
+          <input type="email" id="email" name="email" autocomplete="username" required>
+        </div>
+        <div class="champ">
+          <label for="motDePasse">Mot de passe</label>
+          <input type="password" id="motDePasse" name="motDePasse" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="bouton-connexion" id="boutonConnexion">Se connecter</button>
+      </form>
+
+      <p class="pied-form">Accès réservé à l'équipe KSB Garage.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { connecter, surChangementAuth } from './shared.js';
+
+    const formulaire = document.getElementById('formConnexion');
+    const bouton = document.getElementById('boutonConnexion');
+    const messageErreur = document.getElementById('messageErreur');
+
+    // Si déjà connecté, on passe directement à l'accueil.
+    surChangementAuth((utilisateur) => {
+      if (utilisateur) { window.location.href = 'home.html'; }
+    });
+
+    function afficherErreur(texte) {
+      messageErreur.textContent = texte;
+      messageErreur.classList.add('visible');
+    }
+
+    function masquerErreur() {
+      messageErreur.classList.remove('visible');
+    }
+
+    function traduireErreur(code) {
+      const messages = {
+        'auth/invalid-email': "Adresse e-mail invalide.",
+        'auth/user-disabled': "Ce compte a été désactivé.",
+        'auth/user-not-found': "Aucun compte ne correspond à cette adresse.",
+        'auth/wrong-password': "Mot de passe incorrect.",
+        'auth/invalid-credential': "E-mail ou mot de passe incorrect.",
+        'auth/too-many-requests': "Trop de tentatives. Réessayez dans quelques minutes.",
+        'auth/network-request-failed': "Pas de connexion réseau. Vérifiez votre connexion."
+      };
+      return messages[code] || "Impossible de se connecter. Réessayez.";
+    }
+
+    formulaire.addEventListener('submit', async (evenement) => {
+      evenement.preventDefault();
+      masquerErreur();
+
+      const email = document.getElementById('email').value.trim();
+      const motDePasse = document.getElementById('motDePasse').value;
+
+      bouton.disabled = true;
+      bouton.textContent = 'Connexion...';
+
+      try {
+        await connecter(email, motDePasse);
+        window.location.href = 'home.html';
+      } catch (erreur) {
+        afficherErreur(traduireErreur(erreur.code));
+        bouton.disabled = false;
+        bouton.textContent = 'Se connecter';
+      }
+    });
+  </script>
+</body>
+</html>
