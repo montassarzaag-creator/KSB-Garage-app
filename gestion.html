@@ -503,14 +503,19 @@ document.getElementById('boutonSauverClient').addEventListener('click', async ()
   try {
     if (id) {
       await updateDoc(doc(db, 'clients', id), donnees);
+      const idx = clients.findIndex((c) => c.id === id);
+      if (idx !== -1) clients[idx] = { ...clients[idx], ...donnees };
       await journaliser('clients', 'modification', id, { nom });
       toast('Client mis à jour');
     } else {
-      donnees.creeLe = serverTimestamp();
-      const ref = await addDoc(collection(db, 'clients'), donnees);
+      const ref = await addDoc(collection(db, 'clients'), { ...donnees, creeLe: serverTimestamp() });
+      clients.push({ id: ref.id, ...donnees });
+      clients.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
       await journaliser('clients', 'creation', ref.id, { nom });
       toast('Client créé');
     }
+    rendreClients();
+    remplirSelectClients();
     fermerModale('modaleClient');
   } catch (e) {
     toast('Erreur : ' + e.message, 'ko');
@@ -526,6 +531,9 @@ async function supprimerClient(id) {
   if (!confirm('Supprimer ce client ?')) return;
   try {
     await deleteDoc(doc(db, 'clients', id));
+    clients = clients.filter((c) => c.id !== id);
+    rendreClients();
+    remplirSelectClients();
     await journaliser('clients', 'suppression', id, {});
     toast('Client supprimé');
   } catch (e) {
@@ -628,14 +636,19 @@ document.getElementById('boutonSauverVehicule').addEventListener('click', async 
   try {
     if (id) {
       await updateDoc(doc(db, 'vehicules', id), donnees);
+      const idx = vehicules.findIndex((v) => v.id === id);
+      if (idx !== -1) vehicules[idx] = { ...vehicules[idx], ...donnees };
       await journaliser('vehicules', 'modification', id, { immatriculation });
       toast('Véhicule mis à jour');
     } else {
-      donnees.creeLe = serverTimestamp();
-      const ref = await addDoc(collection(db, 'vehicules'), donnees);
+      const ref = await addDoc(collection(db, 'vehicules'), { ...donnees, creeLe: serverTimestamp() });
+      vehicules.push({ id: ref.id, ...donnees });
+      vehicules.sort((a, b) => (a.immatriculation || '').localeCompare(b.immatriculation || ''));
       await journaliser('vehicules', 'creation', ref.id, { immatriculation });
       toast('Véhicule créé');
     }
+    rendreVehicules();
+    rendreClients();
     fermerModale('modaleVehicule');
     // Si on venait du dossier, on rafraîchit le select véhicule du dossier
     if (document.getElementById('dossierClientId').value === clientId) remplirSelectVehiculesPourClient(clientId);
@@ -653,6 +666,9 @@ async function supprimerVehicule(id) {
   if (!confirm('Supprimer ce véhicule ?')) return;
   try {
     await deleteDoc(doc(db, 'vehicules', id));
+    vehicules = vehicules.filter((v) => v.id !== id);
+    rendreVehicules();
+    rendreClients();
     await journaliser('vehicules', 'suppression', id, {});
     toast('Véhicule supprimé');
   } catch (e) {
@@ -797,6 +813,8 @@ document.getElementById('boutonSauverDossier').addEventListener('click', async (
   try {
     if (id) {
       await updateDoc(doc(db, 'dossiers', id), donnees);
+      const idx = dossiers.findIndex((d) => d.id === id);
+      if (idx !== -1) dossiers[idx] = { ...dossiers[idx], ...donnees };
       if (ancienStatut && ancienStatut !== nouveauStatut) {
         await journaliser('dossiers', 'changement_statut', id, { avant: ancienStatut, apres: nouveauStatut });
       } else {
@@ -806,11 +824,12 @@ document.getElementById('boutonSauverDossier').addEventListener('click', async (
     } else {
       const numero = await prochainNumero('DOS');
       donnees.numero = numero;
-      donnees.creeLe = serverTimestamp();
-      const ref = await addDoc(collection(db, 'dossiers'), donnees);
+      const ref = await addDoc(collection(db, 'dossiers'), { ...donnees, creeLe: serverTimestamp() });
+      dossiers.unshift({ id: ref.id, ...donnees });
       await journaliser('dossiers', 'creation', ref.id, { numero });
       toast('Dossier ' + numero + ' créé');
     }
+    rendreDossiers();
     fermerModale('modaleDossier');
   } catch (e) {
     toast('Erreur : ' + e.message, 'ko');
@@ -821,6 +840,8 @@ async function supprimerDossier(id) {
   if (!confirm('Supprimer ce dossier ? Cette action est définitive.')) return;
   try {
     await deleteDoc(doc(db, 'dossiers', id));
+    dossiers = dossiers.filter((d) => d.id !== id);
+    rendreDossiers();
     await journaliser('dossiers', 'suppression', id, {});
     toast('Dossier supprimé');
   } catch (e) {
