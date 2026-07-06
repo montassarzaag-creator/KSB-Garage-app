@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSB Garage Manager — Admission</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1A1A18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --charbon: #1A1A18; --blanc-chaud: #F7F5F2; --carte: #FFFFFF;
+    --ambre: #E85D25; --ambre-fonce: #C2410C; --bleu-acier: #185FA5;
+    --graphite: #6B6A63; --bordure: #E7E4DA; --vert: #2E8B57; --erreur: #D64545; --gr: #F4F2ED;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--blanc-chaud); color: var(--charbon); min-height: 100vh; }
+
+  header {
+    background: var(--charbon); color: var(--blanc-chaud); padding: 14px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .marque-entete { display: flex; align-items: center; gap: 12px; }
+  .marque-entete .badge {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: conic-gradient(from 200deg, transparent 0deg, transparent 30deg, var(--ambre) 40deg, var(--ambre-fonce) 90deg, transparent 100deg, transparent 360deg);
+    -webkit-mask: radial-gradient(circle at center, transparent 48%, black 49%, black 62%, transparent 63%);
+            mask: radial-gradient(circle at center, transparent 48%, black 49%, black 62%, transparent 63%);
+  }
+  .marque-entete a { color: var(--blanc-chaud); text-decoration: none; font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 16px; }
+  .marque-entete a span { color: var(--ambre); }
+  .zone-utilisateur { display: flex; align-items: center; gap: 14px; font-size: 13px; }
+  #indicateurReseau {
+    display: flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 9px; border-radius: 20px; background: rgba(255,255,255,0.08);
+  }
+  #indicateurReseau .point { width: 6px; height: 6px; border-radius: 50%; background: var(--vert); }
+  #indicateurReseau.hors-ligne .point { background: var(--erreur); }
+  #indicateurReseau.hors-ligne { background: rgba(214,69,69,0.18); }
+  .bouton-deconnexion {
+    background: transparent; border: 1.5px solid #4A4941; color: var(--blanc-chaud);
+    padding: 6px 13px; border-radius: 7px; font-size: 12px; cursor: pointer;
+  }
+  .bouton-deconnexion:hover { border-color: var(--ambre); background: rgba(232,93,37,0.08); }
+
+  main { max-width: 860px; margin: 0 auto; padding: 32px 24px 100px; }
+  .en-tete-page { margin-bottom: 26px; }
+  .en-tete-page .eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ambre-fonce); margin-bottom: 6px; display: block;
+  }
+  .en-tete-page h1 { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 28px; }
+
+  .section {
+    background: var(--carte); border: 1px solid var(--bordure); border-radius: 12px;
+    padding: 22px; margin-bottom: 18px;
+  }
+  .titre-section {
+    font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 15px; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .numero-section {
+    display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
+    border-radius: 50%; background: var(--ambre); color: #fff; font-size: 11px; font-weight: 700;
+  }
+  .sous-titre-section { font-size: 12px; color: var(--graphite); margin-bottom: 16px; }
+
+  .bascule { display: flex; gap: 8px; margin-bottom: 16px; }
+  .bouton-bascule {
+    flex: 1; padding: 9px 12px; border: 1.5px solid var(--bordure); background: var(--gr); border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer; color: var(--graphite);
+  }
+  .bouton-bascule.actif { border-color: var(--ambre); background: #FBEFE8; color: var(--ambre-fonce); }
+
+  .grille-champs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grille-champs .pleine { grid-column: 1 / -1; }
+  .champ { margin-bottom: 4px; }
+  .champ label {
+    display: block; font-size: 11px; font-weight: 600; color: var(--graphite); text-transform: uppercase;
+    letter-spacing: 0.03em; margin-bottom: 6px;
+  }
+  .champ input, .champ select, .champ textarea {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--bordure); border-radius: 7px; font-size: 13px;
+    font-family: 'Inter', sans-serif; background: #fff;
+  }
+  .champ input:focus, .champ select:focus, .champ textarea:focus { outline: none; border-color: var(--bleu-acier); }
+
+  .grille-accessoires { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .case-accessoire {
+    display: flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1.5px solid var(--bordure);
+    border-radius: 8px; font-size: 13px; cursor: pointer; background: #fff;
+  }
+  .case-accessoire input { width: 15px; height: 15px; accent-color: var(--ambre); }
+  .case-accessoire.coche { border-color: var(--ambre); background: #FBEFE8; }
+
+  .zone-signature { border: 1.5px dashed var(--bordure); border-radius: 10px; background: #FAFAF8; padding: 8px; }
+  #canvasSignature { width: 100%; height: 180px; touch-action: none; cursor: crosshair; background: #fff; border-radius: 6px; display: block; }
+  .actions-signature { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .indice-signature { font-size: 12px; color: var(--graphite); }
+
+  .placeholder-photos {
+    border: 1.5px dashed var(--bordure); border-radius: 10px; padding: 24px; text-align: center; background: #FAFAF8;
+  }
+  .placeholder-photos .icone { font-size: 26px; margin-bottom: 8px; }
+  .placeholder-photos p { font-size: 13px; color: var(--graphite); max-width: 46ch; margin: 4px auto 0; line-height: 1.5; }
+  .placeholder-photos .bouton-desactive {
+    margin-top: 12px; padding: 8px 16px; border-radius: 7px; border: 1.5px solid var(--bordure); background: #fff;
+    color: var(--graphite); font-size: 13px; cursor: not-allowed;
+  }
+
+  .barre-actions {
+    position: sticky; bottom: 0; background: var(--carte); border-top: 1px solid var(--bordure);
+    padding: 14px 24px; display: flex; justify-content: flex-end; gap: 10px; margin: 0 -24px;
+    border-radius: 0 0 12px 12px;
+  }
+  .bouton {
+    padding: 10px 18px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .bouton-principal { background: linear-gradient(135deg, var(--ambre) 0%, var(--ambre-fonce) 100%); color: #fff; }
+  .bouton-principal:hover { filter: brightness(1.06); }
+  .bouton-discret { background: var(--gr); color: var(--charbon); }
+  .bouton-discret:hover { background: var(--bordure); }
+  .bouton-secondaire { background: #fff; color: var(--bleu-acier); border: 1.5px solid var(--bleu-acier); }
+  .bouton-secondaire:hover { background: #EAF1FA; }
+  .bouton:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  #toast {
+    position: fixed; bottom: 90px; right: 24px; background: var(--charbon); color: #fff;
+    padding: 12px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 9999;
+    transform: translateY(80px); opacity: 0; transition: all .25s; max-width: 320px;
+  }
+  #toast.visible { transform: translateY(0); opacity: 1; }
+  #toast.ok { border-left: 3px solid var(--vert); }
+  #toast.ko { border-left: 3px solid var(--erreur); }
+  #toast.info { border-left: 3px solid var(--bleu-acier); }
+
+  /* Vue imprimable (masquée à l'écran, affichée seulement à l'impression) */
+  #vueImprimable { display: none; }
+  @media print {
+    header, .onglets, .barre-actions, #toast, .section:not(.a-imprimer) { display: none !important; }
+    main { max-width: 100%; padding: 0; }
+    #vueImprimable { display: block !important; }
+    #vueImprimable table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    #vueImprimable td { padding: 4px 0; }
+  }
+
+  @media (max-width: 640px) {
+    .grille-champs { grid-template-columns: 1fr; }
+    header { padding-left: 16px; padding-right: 16px; }
+    main { padding: 20px 12px 100px; }
+    .barre-actions { flex-wrap: wrap; margin: 0 -12px; padding: 14px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marque-entete">
+    <div class="badge"></div>
+    <a href="home.html">KSB <span>Garage</span></a>
+  </div>
+  <div class="zone-utilisateur">
+    <span id="indicateurReseau"><span class="point"></span><span id="texteReseau">En ligne</span></span>
+    <span id="emailUtilisateur"></span>
+    <button class="bouton-deconnexion" id="boutonDeconnexion">Déconnexion</button>
+  </div>
+</header>
+
+<main>
+  <div class="en-tete-page">
+    <span class="eyebrow">Réception véhicule</span>
+    <h1>Nouvelle admission</h1>
+  </div>
+
+  <!-- 1. CLIENT -->
+  <div class="section">
+    <div class="titre-section"><span class="numero-section">1</span>Client</div>
+    <div class="sous-titre-section">Sélectionnez un client existant ou créez-en un nouveau.</div>
+    <div class="bascule">
+      <button class="bouton-bascule actif" id="basculeClientExistant" data-mode="existant">Client existant</button>
+      <button class="bouton-bascule" id="basculeClientNouveau" data-mode="nouveau">Nouveau client</button>
+    </div>
+
+    <div id="blocClientExistant">
+      <div class="champ">
+        <select id="clientSelect"><option value="">-- Sélectionner un client --</option></select>
+      </div>
+    </div>
+
+    <div id="blocClientNouveau" style="display:none">
+      <div class="grille-champs">
+        <div class="champ pleine"><label>Nom *</label><input type="text" id="nouveauClientNom"></div>
+        <div class="champ"><label>Téléphone</label><input type="text" id="nouveauClientTelephone" placeholder="+225 ..."></div>
+        <div class="champ"><label>WhatsApp</label><input type="text" id="nouveauClientWhatsapp" placeholder="+225 ..."></div>
+        <div class="champ pleine"><label>Adresse</label><input type="text" id="nouveauClientAdresse"></div>
+        <div class="champ"><label>E-mail</label><input type="email" id="nouveauClientEmail"></div>
+        <div class="champ"><label>NIF</label><input type="text" id="nouveauClientNif"></div>
+        <div class="champ pleine"><label>Entreprise</label><input type="text" id="nouveauClientEntreprise"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. VEHICULE -->
+  <div class="section">
+    <div class="titre-section"><span class="numero-section">2</span>Véhicule</div>
+    <div class="sous-titre-section">Sélectionnez un véhicule déjà connu de ce client, ou enregistrez-en un nouveau.</div>
+    <div class="bascule">
+      <button class="bouton-bascule actif" id="basculeVehiculeExistant" data-mode="existant">Véhicule existant</button>
+      <button class="bouton-bascule" id="basculeVehiculeNouveau" data-mode="nouveau">Nouveau véhicule</button>
+    </div>
+
+    <div id="blocVehiculeExistant">
+      <div class="champ">
+        <select id="vehiculeSelect"><option value="">-- Sélectionnez d'abord un client --</option></select>
+      </div>
+    </div>
+
+    <div id="blocVehiculeNouveau" style="display:none">
+      <div class="grille-champs">
+        <div class="champ"><label>Immatriculation *</label><input type="text" id="nouveauVehiculeImmat"></div>
+        <div class="champ"><label>VIN / N° châssis</label><input type="text" id="nouveauVehiculeVin"></div>
+        <div class="champ"><label>Marque</label><input type="text" id="nouveauVehiculeMarque"></div>
+        <div class="champ"><label>Modèle</label><input type="text" id="nouveauVehiculeModele"></div>
+        <div class="champ"><label>Version</label><input type="text" id="nouveauVehiculeVersion"></div>
+        <div class="champ"><label>Année</label><input type="number" id="nouveauVehiculeAnnee" min="1980" max="2035"></div>
+        <div class="champ"><label>Kilométrage</label><input type="number" id="nouveauVehiculeKm" min="0"></div>
+        <div class="champ"><label>Couleur</label><input type="text" id="nouveauVehiculeCouleur"></div>
+        <div class="champ"><label>Motorisation</label><input type="text" id="nouveauVehiculeMotorisation" placeholder="Essence, Diesel..."></div>
+        <div class="champ"><label>Boîte</label>
+          <select id="nouveauVehiculeBoite"><option value="">--</option><option>Manuelle</option><option>Automatique</option></select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. ETAT DES LIEUX -->
+  <div class="section">
+    <div class="titre-section"><span class="numero-section">3</span>État des lieux</div>
+    <div class="sous-titre-section">Constat visuel à l'arrivée du véhicule — sert de référence pour la livraison.</div>
+
+    <div class="grille-champs" style="margin-bottom:16px">
+      <div class="champ"><label>Niveau de carburant</label>
+        <select id="niveauCarburant">
+          <option value="">--</option>
+          <option>Vide</option><option>1/4</option><option>1/2</option><option>3/4</option><option>Plein</option>
+        </select>
+      </div>
+      <div class="champ"><label>Kilométrage à l'admission</label><input type="number" id="kilometrageAdmission" min="0"></div>
+      <div class="champ pleine"><label>Rayures constatées</label><textarea id="rayures" rows="2" placeholder="Ex : aile avant droite, portière arrière gauche..."></textarea></div>
+      <div class="champ pleine"><label>Bosses / chocs constatés</label><textarea id="bosses" rows="2" placeholder="Ex : pare-choc arrière enfoncé..."></textarea></div>
+    </div>
+
+    <label style="display:block;font-size:11px;font-weight:600;color:var(--graphite);text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px">Accessoires présents</label>
+    <div class="grille-accessoires" id="grilleAccessoires">
+      <!-- généré en JS -->
+    </div>
+    <div class="champ pleine"><label>Autre accessoire</label><input type="text" id="accessoireAutre" placeholder="Préciser si non listé..."></div>
+
+    <div class="champ pleine" style="margin-top:10px"><label>Notes générales sur l'état</label><textarea id="notesEtat" rows="2"></textarea></div>
+  </div>
+
+  <!-- 4. PHOTOS (placeholder) -->
+  <div class="section">
+    <div class="titre-section"><span class="numero-section">4</span>Photos</div>
+    <div class="sous-titre-section">Photos du véhicule à l'admission (avant, arrière, côtés, intérieur).</div>
+    <div class="placeholder-photos">
+      <div class="icone">📷</div>
+      <p>Le stockage de photos nécessite d'activer Firebase Storage (forfait Blaze). Cette section sera activée dès que ce sera fait — les autres champs du dossier fonctionnent normalement en attendant.</p>
+      <button class="bouton-desactive" disabled>Ajouter des photos (bientôt disponible)</button>
+    </div>
+  </div>
+
+  <!-- 5. SIGNATURE -->
+  <div class="section">
+    <div class="titre-section"><span class="numero-section">5</span>Signature du client</div>
+    <div class="sous-titre-section">Le client signe pour valider l'état des lieux constaté ci-dessus.</div>
+    <div class="zone-signature">
+      <canvas id="canvasSignature"></canvas>
+    </div>
+    <div class="actions-signature">
+      <span class="indice-signature">Signez avec la souris, le doigt ou le stylet.</span>
+      <button class="bouton bouton-discret" id="boutonEffacerSignature">Effacer</button>
+    </div>
+  </div>
+
+  <div class="barre-actions">
+    <button class="bouton bouton-discret" id="boutonAnnuler">Annuler</button>
+    <button class="bouton bouton-secondaire" id="boutonImprimerOR">Imprimer OR</button>
+    <button class="bouton bouton-secondaire" id="boutonCreerDevis">Enregistrer et créer devis</button>
+    <button class="bouton bouton-principal" id="boutonEnregistrer">Enregistrer</button>
+  </div>
+</main>
+
+<!-- Vue imprimable de l'Ordre de Réparation -->
+<div id="vueImprimable">
+  <div class="section a-imprimer">
+    <h2 style="font-family:'Oswald',sans-serif;margin-bottom:4px">KSB Garage — Ordre de Réparation</h2>
+    <p id="orNumero" style="font-family:'JetBrains Mono',monospace;color:#6B6A63;margin-bottom:16px"></p>
+    <table>
+      <tr><td><strong>Client</strong></td><td id="orClient"></td></tr>
+      <tr><td><strong>Téléphone</strong></td><td id="orTelephone"></td></tr>
+      <tr><td><strong>Véhicule</strong></td><td id="orVehicule"></td></tr>
+      <tr><td><strong>Immatriculation</strong></td><td id="orImmat"></td></tr>
+      <tr><td><strong>Kilométrage</strong></td><td id="orKm"></td></tr>
+      <tr><td><strong>Carburant</strong></td><td id="orCarburant"></td></tr>
+      <tr><td><strong>Rayures</strong></td><td id="orRayures"></td></tr>
+      <tr><td><strong>Bosses</strong></td><td id="orBosses"></td></tr>
+      <tr><td><strong>Accessoires</strong></td><td id="orAccessoires"></td></tr>
+      <tr><td><strong>Date d'admission</strong></td><td id="orDate"></td></tr>
+    </table>
+    <p style="margin-top:20px"><strong>Signature du client :</strong></p>
+    <img id="orSignatureImg" style="max-width:280px;border:1px solid #ccc;margin-top:8px">
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import {
+  protegerPage, deconnecter, surChangementAuth, surChangementReseau,
+  prochainNumero, journaliser,
+  collection, doc, addDoc, onSnapshot, serverTimestamp, db
+} from './shared.js';
+
+protegerPage();
+
+surChangementAuth((utilisateur) => {
+  if (utilisateur) document.getElementById('emailUtilisateur').textContent = utilisateur.email;
+});
+document.getElementById('boutonDeconnexion').addEventListener('click', async () => {
+  await deconnecter();
+  window.location.href = 'login.html';
+});
+surChangementReseau((enLigne) => {
+  const indicateur = document.getElementById('indicateurReseau');
+  const texte = document.getElementById('texteReseau');
+  if (enLigne) { indicateur.classList.remove('hors-ligne'); texte.textContent = 'En ligne'; }
+  else { indicateur.classList.add('hors-ligne'); texte.textContent = 'Hors ligne'; }
+});
+
+function toast(message, type) {
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.className = 'visible ' + (type || 'ok');
+  setTimeout(() => { el.className = ''; }, 3400);
+}
+
+function echapper(texte) {
+  if (texte === null || texte === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = String(texte);
+  return div.innerHTML;
+}
+
+// --- Données en direct ---
+let clients = [];
+let vehicules = [];
+
+onSnapshot(collection(db, 'clients'), (snap) => {
+  clients = [];
+  snap.forEach((d) => clients.push({ id: d.id, ...d.data() }));
+  clients.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+  remplirSelectClients();
+});
+onSnapshot(collection(db, 'vehicules'), (snap) => {
+  vehicules = [];
+  snap.forEach((d) => vehicules.push({ id: d.id, ...d.data() }));
+  remplirSelectVehiculesPourClientCourant();
+});
+
+function remplirSelectClients() {
+  const select = document.getElementById('clientSelect');
+  const valeurActuelle = select.value;
+  select.innerHTML = '<option value="">-- Sélectionner un client --</option>' +
+    clients.map((c) => `<option value="${c.id}">${echapper(c.nom)}</option>`).join('');
+  if (valeurActuelle && clients.some((c) => c.id === valeurActuelle)) select.value = valeurActuelle;
+}
+
+function remplirSelectVehiculesPourClientCourant() {
+  const clientId = document.getElementById('clientSelect').value;
+  const select = document.getElementById('vehiculeSelect');
+  if (!clientId) {
+    select.innerHTML = '<option value="">-- Sélectionnez d\'abord un client --</option>';
+    return;
+  }
+  const vehiculesDuClient = vehicules.filter((v) => v.clientId === clientId);
+  if (!vehiculesDuClient.length) {
+    select.innerHTML = '<option value="">-- Aucun véhicule pour ce client, créez-en un --</option>';
+    return;
+  }
+  select.innerHTML = '<option value="">-- Sélectionner un véhicule --</option>' +
+    vehiculesDuClient.map((v) => `<option value="${v.id}">${echapper(v.immatriculation)}${v.marque ? ' — ' + echapper(v.marque) : ''}</option>`).join('');
+}
+document.getElementById('clientSelect').addEventListener('change', remplirSelectVehiculesPourClientCourant);
+
+// --- Bascules Client / Véhicule (existant vs nouveau) ---
+function configurerBascule(idExistantBtn, idNouveauBtn, idBlocExistant, idBlocNouveau) {
+  const btnExistant = document.getElementById(idExistantBtn);
+  const btnNouveau = document.getElementById(idNouveauBtn);
+  btnExistant.addEventListener('click', () => {
+    btnExistant.classList.add('actif'); btnNouveau.classList.remove('actif');
+    document.getElementById(idBlocExistant).style.display = '';
+    document.getElementById(idBlocNouveau).style.display = 'none';
+  });
+  btnNouveau.addEventListener('click', () => {
+    btnNouveau.classList.add('actif'); btnExistant.classList.remove('actif');
+    document.getElementById(idBlocExistant).style.display = 'none';
+    document.getElementById(idBlocNouveau).style.display = '';
+  });
+}
+configurerBascule('basculeClientExistant', 'basculeClientNouveau', 'blocClientExistant', 'blocClientNouveau');
+configurerBascule('basculeVehiculeExistant', 'basculeVehiculeNouveau', 'blocVehiculeExistant', 'blocVehiculeNouveau');
+
+// --- Accessoires ---
+const LISTE_ACCESSOIRES = ['Roue de secours', 'Cric', 'Triangle de signalisation', 'Extincteur', 'Autoradio', 'Tapis de sol', 'Chargeur', 'Manuel du véhicule'];
+const grilleAccessoires = document.getElementById('grilleAccessoires');
+LISTE_ACCESSOIRES.forEach((nom, i) => {
+  const label = document.createElement('label');
+  label.className = 'case-accessoire';
+  label.innerHTML = `<input type="checkbox" data-accessoire="${nom}"><span>${nom}</span>`;
+  grilleAccessoires.appendChild(label);
+});
+grilleAccessoires.addEventListener('change', (e) => {
+  const label = e.target.closest('.case-accessoire');
+  if (label) label.classList.toggle('coche', e.target.checked);
+});
+
+// --- Signature (canvas) ---
+const canvas = document.getElementById('canvasSignature');
+const ctx = canvas.getContext('2d');
+let dessineEnCours = false;
+let aSigne = false;
+
+function redimensionnerCanvas() {
+  const ratio = window.devicePixelRatio || 1;
+  const largeur = canvas.clientWidth;
+  const hauteur = canvas.clientHeight;
+  canvas.width = largeur * ratio;
+  canvas.height = hauteur * ratio;
+  ctx.scale(ratio, ratio);
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#1A1A18';
+}
+window.addEventListener('resize', () => { const donnees = aSigne ? canvas.toDataURL() : null; redimensionnerCanvas(); });
+setTimeout(redimensionnerCanvas, 50);
+
+function positionPointeur(e) {
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  return { x, y };
+}
+function demarrerDessin(e) {
+  dessineEnCours = true; aSigne = true;
+  const p = positionPointeur(e);
+  ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  e.preventDefault();
+}
+function continuerDessin(e) {
+  if (!dessineEnCours) return;
+  const p = positionPointeur(e);
+  ctx.lineTo(p.x, p.y); ctx.stroke();
+  e.preventDefault();
+}
+function arreterDessin() { dessineEnCours = false; }
+
+canvas.addEventListener('mousedown', demarrerDessin);
+canvas.addEventListener('mousemove', continuerDessin);
+canvas.addEventListener('mouseup', arreterDessin);
+canvas.addEventListener('mouseleave', arreterDessin);
+canvas.addEventListener('touchstart', demarrerDessin, { passive: false });
+canvas.addEventListener('touchmove', continuerDessin, { passive: false });
+canvas.addEventListener('touchend', arreterDessin);
+
+document.getElementById('boutonEffacerSignature').addEventListener('click', () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  aSigne = false;
+});
+
+// --- Enregistrement ---
+async function creerOuRecupererClient() {
+  const modeNouveau = document.getElementById('basculeClientNouveau').classList.contains('actif');
+  if (!modeNouveau) {
+    const clientId = document.getElementById('clientSelect').value;
+    if (!clientId) throw new Error('Sélectionnez un client ou créez-en un nouveau.');
+    return clientId;
+  }
+  const nom = document.getElementById('nouveauClientNom').value.trim();
+  if (!nom) throw new Error('Le nom du nouveau client est obligatoire.');
+  const donnees = {
+    nom,
+    telephone: document.getElementById('nouveauClientTelephone').value.trim(),
+    whatsapp: document.getElementById('nouveauClientWhatsapp').value.trim(),
+    adresse: document.getElementById('nouveauClientAdresse').value.trim(),
+    email: document.getElementById('nouveauClientEmail').value.trim(),
+    nif: document.getElementById('nouveauClientNif').value.trim(),
+    entreprise: document.getElementById('nouveauClientEntreprise').value.trim(),
+    creeLe: serverTimestamp(),
+  };
+  const ref = await addDoc(collection(db, 'clients'), donnees);
+  await journaliser('clients', 'creation', ref.id, { nom, source: 'admission' });
+  return ref.id;
+}
+
+async function creerOuRecupererVehicule(clientId) {
+  const modeNouveau = document.getElementById('basculeVehiculeNouveau').classList.contains('actif');
+  if (!modeNouveau) {
+    const vehiculeId = document.getElementById('vehiculeSelect').value;
+    if (!vehiculeId) throw new Error('Sélectionnez un véhicule ou créez-en un nouveau.');
+    return vehiculeId;
+  }
+  const immatriculation = document.getElementById('nouveauVehiculeImmat').value.trim();
+  if (!immatriculation) throw new Error("L'immatriculation du nouveau véhicule est obligatoire.");
+  const donnees = {
+    clientId,
+    immatriculation,
+    vin: document.getElementById('nouveauVehiculeVin').value.trim(),
+    marque: document.getElementById('nouveauVehiculeMarque').value.trim(),
+    modele: document.getElementById('nouveauVehiculeModele').value.trim(),
+    version: document.getElementById('nouveauVehiculeVersion').value.trim(),
+    annee: document.getElementById('nouveauVehiculeAnnee').value ? parseInt(document.getElementById('nouveauVehiculeAnnee').value) : null,
+    kilometrage: document.getElementById('nouveauVehiculeKm').value ? parseInt(document.getElementById('nouveauVehiculeKm').value) : 0,
+    couleur: document.getElementById('nouveauVehiculeCouleur').value.trim(),
+    motorisation: document.getElementById('nouveauVehiculeMotorisation').value.trim(),
+    boite: document.getElementById('nouveauVehiculeBoite').value,
+    creeLe: serverTimestamp(),
+  };
+  const ref = await addDoc(collection(db, 'vehicules'), donnees);
+  await journaliser('vehicules', 'creation', ref.id, { immatriculation, source: 'admission' });
+  return ref.id;
+}
+
+function accessoiresCoches() {
+  const coches = Array.from(document.querySelectorAll('[data-accessoire]:checked')).map((c) => c.dataset.accessoire);
+  const autre = document.getElementById('accessoireAutre').value.trim();
+  if (autre) coches.push(autre);
+  return coches;
+}
+
+async function enregistrerAdmission() {
+  const clientId = await creerOuRecupererClient();
+  const vehiculeId = await creerOuRecupererVehicule(clientId);
+  const numero = await prochainNumero('DOS');
+
+  const donneesDossier = {
+    numero,
+    clientId,
+    vehiculeId,
+    statut: 'Réception',
+    dateEntree: new Date().toISOString().slice(0, 10),
+    dateSortiePrevue: '',
+    montantDevis: 0,
+    montantFacture: 0,
+    montantPaye: 0,
+    mecanicien: '',
+    notes: document.getElementById('notesEtat').value.trim(),
+    niveauCarburant: document.getElementById('niveauCarburant').value,
+    kilometrageAdmission: document.getElementById('kilometrageAdmission').value ? parseInt(document.getElementById('kilometrageAdmission').value) : null,
+    rayures: document.getElementById('rayures').value.trim(),
+    bosses: document.getElementById('bosses').value.trim(),
+    accessoires: accessoiresCoches(),
+    signatureClient: aSigne ? canvas.toDataURL('image/png') : null,
+    creeLe: serverTimestamp(),
+  };
+
+  const ref = await addDoc(collection(db, 'dossiers'), donneesDossier);
+  await journaliser('dossiers', 'creation', ref.id, { numero, source: 'admission' });
+
+  return { id: ref.id, ...donneesDossier, clientId, vehiculeId };
+}
+
+document.getElementById('boutonEnregistrer').addEventListener('click', async (e) => {
+  const bouton = e.currentTarget;
+  bouton.disabled = true;
+  try {
+    const dossier = await enregistrerAdmission();
+    toast('Dossier ' + dossier.numero + ' créé — admission enregistrée', 'ok');
+    setTimeout(() => { window.location.href = 'gestion.html#dossiers'; }, 1200);
+  } catch (err) {
+    toast(err.message, 'ko');
+    bouton.disabled = false;
+  }
+});
+
+document.getElementById('boutonCreerDevis').addEventListener('click', async (e) => {
+  const bouton = e.currentTarget;
+  bouton.disabled = true;
+  try {
+    const dossier = await enregistrerAdmission();
+    toast('Dossier ' + dossier.numero + ' créé. Le module Devis arrive prochainement — vous pourrez le lancer depuis ici.', 'info');
+    setTimeout(() => { window.location.href = 'gestion.html#dossiers'; }, 2000);
+  } catch (err) {
+    toast(err.message, 'ko');
+    bouton.disabled = false;
+  }
+});
+
+document.getElementById('boutonImprimerOR').addEventListener('click', async (e) => {
+  const bouton = e.currentTarget;
+  bouton.disabled = true;
+  try {
+    const dossier = await enregistrerAdmission();
+    const client = clients.find((c) => c.id === dossier.clientId) || {};
+    const vehicule = vehicules.find((v) => v.id === dossier.vehiculeId) || {};
+    document.getElementById('orNumero').textContent = 'N° ' + dossier.numero;
+    document.getElementById('orClient').textContent = client.nom || '';
+    document.getElementById('orTelephone').textContent = client.telephone || '—';
+    document.getElementById('orVehicule').textContent = (vehicule.marque || '') + ' ' + (vehicule.modele || '');
+    document.getElementById('orImmat').textContent = vehicule.immatriculation || '';
+    document.getElementById('orKm').textContent = dossier.kilometrageAdmission ? dossier.kilometrageAdmission.toLocaleString('fr-FR') + ' km' : '—';
+    document.getElementById('orCarburant').textContent = dossier.niveauCarburant || '—';
+    document.getElementById('orRayures').textContent = dossier.rayures || 'Aucune';
+    document.getElementById('orBosses').textContent = dossier.bosses || 'Aucune';
+    document.getElementById('orAccessoires').textContent = (dossier.accessoires || []).join(', ') || 'Aucun';
+    document.getElementById('orDate').textContent = dossier.dateEntree;
+    const imgSignature = document.getElementById('orSignatureImg');
+    if (dossier.signatureClient) { imgSignature.src = dossier.signatureClient; imgSignature.style.display = ''; }
+    else { imgSignature.style.display = 'none'; }
+    toast('Dossier ' + dossier.numero + ' créé, ouverture de l\'impression...', 'ok');
+    setTimeout(() => { window.print(); bouton.disabled = false; }, 400);
+  } catch (err) {
+    toast(err.message, 'ko');
+    bouton.disabled = false;
+  }
+});
+
+document.getElementById('boutonAnnuler').addEventListener('click', () => {
+  window.location.href = 'home.html';
+});
+</script>
+</body>
+</html>
