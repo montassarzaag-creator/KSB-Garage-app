@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSB Garage Manager — Clients, Véhicules & Dossiers</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1A1A18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --charbon: #1A1A18;
+    --charbon-clair: #26251F;
+    --blanc-chaud: #F7F5F2;
+    --carte: #FFFFFF;
+    --ambre: #E85D25;
+    --ambre-fonce: #C2410C;
+    --bleu-acier: #185FA5;
+    --graphite: #6B6A63;
+    --bordure: #E7E4DA;
+    --vert: #2E8B57;
+    --erreur: #D64545;
+    --gr: #F4F2ED;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--blanc-chaud); color: var(--charbon); min-height: 100vh; }
+
+  header {
+    background: var(--charbon); color: var(--blanc-chaud);
+    padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .marque-entete { display: flex; align-items: center; gap: 12px; }
+  .marque-entete .badge {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: conic-gradient(from 200deg, transparent 0deg, transparent 30deg, var(--ambre) 40deg, var(--ambre-fonce) 90deg, transparent 100deg, transparent 360deg);
+    -webkit-mask: radial-gradient(circle at center, transparent 48%, black 49%, black 62%, transparent 63%);
+            mask: radial-gradient(circle at center, transparent 48%, black 49%, black 62%, transparent 63%);
+  }
+  .marque-entete a { color: var(--blanc-chaud); text-decoration: none; font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 16px; }
+  .marque-entete a span { color: var(--ambre); }
+  .zone-utilisateur { display: flex; align-items: center; gap: 14px; font-size: 13px; }
+  #indicateurReseau {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 20px; background: rgba(255,255,255,0.08);
+  }
+  #indicateurReseau .point { width: 6px; height: 6px; border-radius: 50%; background: var(--vert); }
+  #indicateurReseau.hors-ligne .point { background: var(--erreur); }
+  #indicateurReseau.hors-ligne { background: rgba(214,69,69,0.18); }
+  .bouton-deconnexion {
+    background: transparent; border: 1.5px solid #4A4941; color: var(--blanc-chaud);
+    padding: 6px 13px; border-radius: 7px; font-size: 12px; cursor: pointer;
+  }
+  .bouton-deconnexion:hover { border-color: var(--ambre); background: rgba(232,93,37,0.08); }
+
+  .onglets {
+    background: var(--carte); border-bottom: 1px solid var(--bordure);
+    padding: 0 32px; display: flex; gap: 2px;
+  }
+  .onglet {
+    padding: 13px 20px; border: none; background: none; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: var(--graphite);
+    border-bottom: 2px solid transparent;
+  }
+  .onglet:hover { color: var(--charbon); }
+  .onglet.actif { color: var(--charbon); border-bottom-color: var(--ambre); font-weight: 600; }
+
+  main { max-width: 1280px; margin: 0 auto; padding: 28px 32px 64px; }
+  .panneau { display: none; }
+  .panneau.actif { display: block; }
+
+  .barre-outils {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .barre-outils .recherche {
+    flex: 1; min-width: 220px; max-width: 380px;
+    padding: 9px 13px; border: 1.5px solid var(--bordure); border-radius: 8px;
+    font-size: 13px; background: var(--carte);
+  }
+  .barre-outils .recherche:focus { outline: none; border-color: var(--bleu-acier); }
+  .bouton {
+    padding: 9px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .bouton-principal { background: linear-gradient(135deg, var(--ambre) 0%, var(--ambre-fonce) 100%); color: #fff; }
+  .bouton-principal:hover { filter: brightness(1.06); }
+  .bouton-discret { background: var(--gr); color: var(--charbon); }
+  .bouton-discret:hover { background: var(--bordure); }
+  .bouton-texte { background: none; border: none; color: var(--bleu-acier); font-size: 13px; cursor: pointer; font-weight: 600; }
+
+  .carte-tableau { background: var(--carte); border: 1px solid var(--bordure); border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: var(--gr); padding: 10px 14px; text-align: left;
+    font-size: 10.5px; font-weight: 600; color: var(--graphite); text-transform: uppercase; letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--bordure); white-space: nowrap;
+  }
+  td { padding: 11px 14px; border-bottom: 1px solid #F1EFE9; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAF8F4; }
+  .vide { text-align: center; padding: 50px 20px; color: var(--graphite); font-size: 13px; }
+
+  .lien-action { background: none; border: none; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; margin-right: 4px; }
+  .lien-action.modifier { background: #EAF1FA; color: var(--bleu-acier); }
+  .lien-action.supprimer { background: #FCEBEB; color: var(--erreur); }
+  .lien-action:hover { filter: brightness(0.95); }
+
+  .badge-statut {
+    display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+
+  /* Modales */
+  .fond-modale {
+    position: fixed; inset: 0; background: rgba(26,26,24,0.5); display: none;
+    align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+  }
+  .fond-modale.ouverte { display: flex; }
+  .modale {
+    background: var(--carte); border-radius: 12px; width: 100%; max-width: 620px; max-height: 88vh; overflow-y: auto;
+  }
+  .modale-large { max-width: 760px; }
+  .entete-modale {
+    padding: 16px 22px; border-bottom: 1px solid var(--bordure);
+    display: flex; justify-content: space-between; align-items: center;
+    position: sticky; top: 0; background: var(--carte); z-index: 1;
+  }
+  .entete-modale h3 { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 15px; }
+  .fermer-modale { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--graphite); line-height: 1; }
+  .corps-modale { padding: 22px; }
+  .grille-champs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grille-champs .pleine { grid-column: 1 / -1; }
+  .champ label {
+    display: block; font-size: 11px; font-weight: 600; color: var(--graphite); text-transform: uppercase;
+    letter-spacing: 0.03em; margin-bottom: 6px;
+  }
+  .champ input, .champ select, .champ textarea {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--bordure); border-radius: 7px; font-size: 13px;
+    font-family: 'Inter', sans-serif; background: #fff;
+  }
+  .champ input:focus, .champ select:focus, .champ textarea:focus { outline: none; border-color: var(--bleu-acier); }
+  .champ { margin-bottom: 4px; }
+  .pied-modale { padding: 14px 22px; border-top: 1px solid var(--bordure); display: flex; justify-content: flex-end; gap: 10px; }
+
+  .bloc-selection { background: var(--gr); border-radius: 8px; padding: 14px; margin-bottom: 16px; }
+  .bloc-selection .titre-bloc { font-size: 11px; font-weight: 700; color: var(--graphite); text-transform: uppercase; margin-bottom: 10px; }
+
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--charbon); color: #fff;
+    padding: 12px 18px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 9999;
+    transform: translateY(80px); opacity: 0; transition: all .25s; max-width: 320px;
+  }
+  #toast.visible { transform: translateY(0); opacity: 1; }
+  #toast.ok { border-left: 3px solid var(--vert); }
+  #toast.ko { border-left: 3px solid var(--erreur); }
+
+  @media (max-width: 720px) {
+    .grille-champs { grid-template-columns: 1fr; }
+    main { padding: 20px 16px 48px; }
+    header, .onglets { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marque-entete">
+    <div class="badge"></div>
+    <a href="home.html">KSB <span>Garage</span></a>
+  </div>
+  <div class="zone-utilisateur">
+    <span id="indicateurReseau"><span class="point"></span><span id="texteReseau">En ligne</span></span>
+    <span id="emailUtilisateur"></span>
+    <button class="bouton-deconnexion" id="boutonDeconnexion">Déconnexion</button>
+  </div>
+</header>
+
+<div class="onglets">
+  <button class="onglet" data-onglet="clients">Clients</button>
+  <button class="onglet" data-onglet="vehicules">Véhicules</button>
+  <button class="onglet" data-onglet="dossiers">Dossiers</button>
+</div>
+
+<main>
+
+  <!-- ONGLET CLIENTS -->
+  <div class="panneau" id="panneau-clients">
+    <div class="barre-outils">
+      <input type="text" class="recherche" id="rechercheClients" placeholder="Rechercher un client (nom, téléphone, entreprise)...">
+      <button class="bouton bouton-principal" id="boutonNouveauClient">+ Nouveau client</button>
+    </div>
+    <div class="carte-tableau">
+      <table>
+        <thead><tr>
+          <th>Nom</th><th>Téléphone</th><th>Entreprise</th><th>NIF</th><th>Véhicules</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="corpsTableClients"></tbody>
+      </table>
+      <div class="vide" id="videClients" style="display:none">Aucun client pour l'instant. Créez le premier avec le bouton ci-dessus.</div>
+    </div>
+  </div>
+
+  <!-- ONGLET VEHICULES -->
+  <div class="panneau" id="panneau-vehicules">
+    <div class="barre-outils">
+      <input type="text" class="recherche" id="rechercheVehicules" placeholder="Rechercher un véhicule (immatriculation, marque, client)...">
+      <button class="bouton bouton-principal" id="boutonNouveauVehicule">+ Nouveau véhicule</button>
+    </div>
+    <div class="carte-tableau">
+      <table>
+        <thead><tr>
+          <th>Immatriculation</th><th>Marque / Modèle</th><th>Année</th><th>Client</th><th>Kilométrage</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="corpsTableVehicules"></tbody>
+      </table>
+      <div class="vide" id="videVehicules" style="display:none">Aucun véhicule enregistré pour l'instant.</div>
+    </div>
+  </div>
+
+  <!-- ONGLET DOSSIERS -->
+  <div class="panneau" id="panneau-dossiers">
+    <div class="barre-outils">
+      <input type="text" class="recherche" id="rechercheDossiers" placeholder="Rechercher un dossier (numéro, client, véhicule)...">
+      <button class="bouton bouton-principal" id="boutonNouveauDossier">+ Nouveau dossier</button>
+    </div>
+    <div class="carte-tableau">
+      <table>
+        <thead><tr>
+          <th>N° Dossier</th><th>Client</th><th>Véhicule</th><th>Statut</th><th>Entrée</th><th>Sortie prévue</th><th>Reste à payer</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="corpsTableDossiers"></tbody>
+      </table>
+      <div class="vide" id="videDossiers" style="display:none">Aucun dossier ouvert pour l'instant.</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODALE CLIENT -->
+<div class="fond-modale" id="modaleClient">
+  <div class="modale">
+    <div class="entete-modale"><h3 id="titreModaleClient">Nouveau client</h3><button class="fermer-modale" data-fermer="modaleClient">&times;</button></div>
+    <div class="corps-modale">
+      <input type="hidden" id="clientId">
+      <div class="grille-champs">
+        <div class="champ pleine"><label>Nom *</label><input type="text" id="clientNom"></div>
+        <div class="champ"><label>Téléphone</label><input type="text" id="clientTelephone" placeholder="+225 ..."></div>
+        <div class="champ"><label>WhatsApp</label><input type="text" id="clientWhatsapp" placeholder="+225 ..."></div>
+        <div class="champ pleine"><label>Adresse</label><input type="text" id="clientAdresse"></div>
+        <div class="champ"><label>E-mail</label><input type="email" id="clientEmail"></div>
+        <div class="champ"><label>NIF</label><input type="text" id="clientNif"></div>
+        <div class="champ pleine"><label>Entreprise</label><input type="text" id="clientEntreprise"></div>
+      </div>
+    </div>
+    <div class="pied-modale">
+      <button class="bouton bouton-discret" data-fermer="modaleClient">Annuler</button>
+      <button class="bouton bouton-principal" id="boutonSauverClient">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE VEHICULE -->
+<div class="fond-modale" id="modaleVehicule">
+  <div class="modale modale-large">
+    <div class="entete-modale"><h3 id="titreModaleVehicule">Nouveau véhicule</h3><button class="fermer-modale" data-fermer="modaleVehicule">&times;</button></div>
+    <div class="corps-modale">
+      <input type="hidden" id="vehiculeId">
+      <div class="champ pleine" style="margin-bottom:14px">
+        <label>Client propriétaire *</label>
+        <select id="vehiculeClientId"><option value="">-- Sélectionner un client --</option></select>
+      </div>
+      <div class="grille-champs">
+        <div class="champ"><label>Immatriculation *</label><input type="text" id="vehiculeImmat"></div>
+        <div class="champ"><label>VIN / N° châssis</label><input type="text" id="vehiculeVin"></div>
+        <div class="champ"><label>Marque</label><input type="text" id="vehiculeMarque"></div>
+        <div class="champ"><label>Modèle</label><input type="text" id="vehiculeModele"></div>
+        <div class="champ"><label>Version</label><input type="text" id="vehiculeVersion"></div>
+        <div class="champ"><label>Année</label><input type="number" id="vehiculeAnnee" min="1980" max="2035"></div>
+        <div class="champ"><label>Kilométrage</label><input type="number" id="vehiculeKm" min="0"></div>
+        <div class="champ"><label>Couleur</label><input type="text" id="vehiculeCouleur"></div>
+        <div class="champ"><label>Motorisation</label><input type="text" id="vehiculeMotorisation" placeholder="Essence, Diesel..."></div>
+        <div class="champ"><label>Boîte</label>
+          <select id="vehiculeBoite"><option value="">--</option><option>Manuelle</option><option>Automatique</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="pied-modale">
+      <button class="bouton bouton-discret" data-fermer="modaleVehicule">Annuler</button>
+      <button class="bouton bouton-principal" id="boutonSauverVehicule">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE DOSSIER -->
+<div class="fond-modale" id="modaleDossier">
+  <div class="modale modale-large">
+    <div class="entete-modale"><h3 id="titreModaleDossier">Nouveau dossier</h3><button class="fermer-modale" data-fermer="modaleDossier">&times;</button></div>
+    <div class="corps-modale">
+      <input type="hidden" id="dossierId">
+
+      <div class="bloc-selection">
+        <div class="titre-bloc">Client</div>
+        <div class="grille-champs">
+          <div class="champ pleine">
+            <select id="dossierClientId"><option value="">-- Sélectionner un client existant --</option></select>
+          </div>
+        </div>
+        <button class="bouton-texte" id="boutonNouveauClientDepuisDossier" style="margin-top:8px">+ Créer un nouveau client</button>
+      </div>
+
+      <div class="bloc-selection">
+        <div class="titre-bloc">Véhicule</div>
+        <div class="grille-champs">
+          <div class="champ pleine">
+            <select id="dossierVehiculeId"><option value="">-- Sélectionner d'abord un client --</option></select>
+          </div>
+        </div>
+        <button class="bouton-texte" id="boutonNouveauVehiculeDepuisDossier" style="margin-top:8px">+ Créer un nouveau véhicule pour ce client</button>
+      </div>
+
+      <div class="grille-champs">
+        <div class="champ"><label>Statut</label>
+          <select id="dossierStatut">
+            <option>Réception</option>
+            <option>Diagnostic</option>
+            <option>Attente validation</option>
+            <option>Pièces commandées</option>
+            <option>En réparation</option>
+            <option>Contrôle qualité</option>
+            <option>Prêt à livrer</option>
+            <option>Livré</option>
+            <option>Annulé</option>
+          </select>
+        </div>
+        <div class="champ"><label>Mécanicien assigné</label><input type="text" id="dossierMecanicien"></div>
+        <div class="champ"><label>Date d'entrée</label><input type="date" id="dossierDateEntree"></div>
+        <div class="champ"><label>Sortie prévue</label><input type="date" id="dossierDateSortie"></div>
+        <div class="champ"><label>Montant devis (FCFA)</label><input type="number" id="dossierMontantDevis" min="0"></div>
+        <div class="champ"><label>Montant facturé (FCFA)</label><input type="number" id="dossierMontantFacture" min="0"></div>
+        <div class="champ"><label>Montant payé (FCFA)</label><input type="number" id="dossierMontantPaye" min="0"></div>
+        <div class="champ pleine"><label>Notes</label><textarea id="dossierNotes" rows="3"></textarea></div>
+      </div>
+    </div>
+    <div class="pied-modale">
+      <button class="bouton bouton-discret" data-fermer="modaleDossier">Annuler</button>
+      <button class="bouton bouton-principal" id="boutonSauverDossier">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import {
+  protegerPage, deconnecter, surChangementAuth, surChangementReseau,
+  prochainNumero, formaterFCFA, journaliser,
+  collection, doc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, db, auth
+} from './shared.js';
+
+protegerPage();
+
+surChangementAuth((utilisateur) => {
+  if (utilisateur) document.getElementById('emailUtilisateur').textContent = utilisateur.email;
+});
+
+document.getElementById('boutonDeconnexion').addEventListener('click', async () => {
+  await deconnecter();
+  window.location.href = 'login.html';
+});
+
+surChangementReseau((enLigne) => {
+  const indicateur = document.getElementById('indicateurReseau');
+  const texte = document.getElementById('texteReseau');
+  if (enLigne) { indicateur.classList.remove('hors-ligne'); texte.textContent = 'En ligne'; }
+  else { indicateur.classList.add('hors-ligne'); texte.textContent = 'Hors ligne'; }
+});
+
+function toast(message, type) {
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.className = 'visible ' + (type || 'ok');
+  setTimeout(() => { el.className = ''; }, 3200);
+}
+
+function ouvrirModale(id) { document.getElementById(id).classList.add('ouverte'); }
+function fermerModale(id) { document.getElementById(id).classList.remove('ouverte'); }
+document.querySelectorAll('[data-fermer]').forEach((btn) => {
+  btn.addEventListener('click', () => fermerModale(btn.dataset.fermer));
+});
+document.querySelectorAll('.fond-modale').forEach((fond) => {
+  fond.addEventListener('click', (e) => { if (e.target === fond) fond.classList.remove('ouverte'); });
+});
+
+// --- Navigation par onglets ---
+const ongletsValides = ['clients', 'vehicules', 'dossiers'];
+function activerOnglet(nom) {
+  if (!ongletsValides.includes(nom)) nom = 'clients';
+  document.querySelectorAll('.onglet').forEach((b) => b.classList.toggle('actif', b.dataset.onglet === nom));
+  document.querySelectorAll('.panneau').forEach((p) => p.classList.toggle('actif', p.id === 'panneau-' + nom));
+  window.location.hash = nom;
+}
+document.querySelectorAll('.onglet').forEach((b) => {
+  b.addEventListener('click', () => activerOnglet(b.dataset.onglet));
+});
+activerOnglet((window.location.hash || '#clients').slice(1));
+
+// --- Etat local (mis à jour en temps réel depuis Firestore) ---
+let clients = [];
+let vehicules = [];
+let dossiers = [];
+
+// --- CLIENTS ---
+onSnapshot(collection(db, 'clients'), (snap) => {
+  clients = [];
+  snap.forEach((d) => clients.push({ id: d.id, ...d.data() }));
+  clients.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+  rendreClients();
+  remplirSelectClients();
+  rendreVehicules(); // les noms de client affichés dans le tableau véhicules dépendent de `clients`
+  rendreDossiers();
+});
+
+function rendreClients() {
+  const terme = (document.getElementById('rechercheClients').value || '').toLowerCase();
+  const filtres = clients.filter((c) => {
+    const texte = ((c.nom || '') + (c.telephone || '') + (c.entreprise || '')).toLowerCase();
+    return !terme || texte.includes(terme);
+  });
+  const corps = document.getElementById('corpsTableClients');
+  document.getElementById('videClients').style.display = filtres.length ? 'none' : 'block';
+  corps.innerHTML = filtres.map((c) => {
+    const nbVehicules = vehicules.filter((v) => v.clientId === c.id).length;
+    return `<tr>
+      <td><strong>${echapper(c.nom)}</strong></td>
+      <td>${echapper(c.telephone || '—')}</td>
+      <td>${echapper(c.entreprise || '—')}</td>
+      <td>${echapper(c.nif || '—')}</td>
+      <td>${nbVehicules}</td>
+      <td>
+        <button class="lien-action modifier" data-modifier-client="${c.id}">Modifier</button>
+        <button class="lien-action supprimer" data-supprimer-client="${c.id}">Supprimer</button>
+      </td>
+    </tr>`;
+  }).join('');
+  corps.querySelectorAll('[data-modifier-client]').forEach((b) => b.addEventListener('click', () => ouvrirClientPourModification(b.dataset.modifierClient)));
+  corps.querySelectorAll('[data-supprimer-client]').forEach((b) => b.addEventListener('click', () => supprimerClient(b.dataset.supprimerClient)));
+}
+document.getElementById('rechercheClients').addEventListener('input', rendreClients);
+
+function remplirSelectClients() {
+  const options = '<option value="">-- Sélectionner un client --</option>' +
+    clients.map((c) => `<option value="${c.id}">${echapper(c.nom)}</option>`).join('');
+  document.getElementById('dossierClientId').innerHTML = options;
+  const selectVehiculeClient = document.getElementById('vehiculeClientId');
+  const valeurActuelle = selectVehiculeClient.value;
+  selectVehiculeClient.innerHTML = '<option value="">-- Sélectionner un client --</option>' +
+    clients.map((c) => `<option value="${c.id}">${echapper(c.nom)}</option>`).join('');
+  if (valeurActuelle) selectVehiculeClient.value = valeurActuelle;
+}
+
+function reinitialiserFormulaireClient() {
+  document.getElementById('clientId').value = '';
+  ['clientNom','clientTelephone','clientWhatsapp','clientAdresse','clientEmail','clientNif','clientEntreprise'].forEach((id) => {
+    document.getElementById(id).value = '';
+  });
+}
+
+document.getElementById('boutonNouveauClient').addEventListener('click', () => {
+  reinitialiserFormulaireClient();
+  document.getElementById('titreModaleClient').textContent = 'Nouveau client';
+  ouvrirModale('modaleClient');
+});
+
+function ouvrirClientPourModification(id) {
+  const c = clients.find((x) => x.id === id);
+  if (!c) return;
+  document.getElementById('clientId').value = c.id;
+  document.getElementById('clientNom').value = c.nom || '';
+  document.getElementById('clientTelephone').value = c.telephone || '';
+  document.getElementById('clientWhatsapp').value = c.whatsapp || '';
+  document.getElementById('clientAdresse').value = c.adresse || '';
+  document.getElementById('clientEmail').value = c.email || '';
+  document.getElementById('clientNif').value = c.nif || '';
+  document.getElementById('clientEntreprise').value = c.entreprise || '';
+  document.getElementById('titreModaleClient').textContent = 'Modifier ' + c.nom;
+  ouvrirModale('modaleClient');
+}
+
+document.getElementById('boutonSauverClient').addEventListener('click', async () => {
+  const nom = document.getElementById('clientNom').value.trim();
+  if (!nom) { toast('Le nom du client est obligatoire', 'ko'); return; }
+  const id = document.getElementById('clientId').value;
+  const donnees = {
+    nom,
+    telephone: document.getElementById('clientTelephone').value.trim(),
+    whatsapp: document.getElementById('clientWhatsapp').value.trim(),
+    adresse: document.getElementById('clientAdresse').value.trim(),
+    email: document.getElementById('clientEmail').value.trim(),
+    nif: document.getElementById('clientNif').value.trim(),
+    entreprise: document.getElementById('clientEntreprise').value.trim(),
+  };
+  try {
+    if (id) {
+      await updateDoc(doc(db, 'clients', id), donnees);
+      await journaliser('clients', 'modification', id, { nom });
+      toast('Client mis à jour');
+    } else {
+      donnees.creeLe = serverTimestamp();
+      const ref = await addDoc(collection(db, 'clients'), donnees);
+      await journaliser('clients', 'creation', ref.id, { nom });
+      toast('Client créé');
+    }
+    fermerModale('modaleClient');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'ko');
+  }
+});
+
+async function supprimerClient(id) {
+  const nbVehicules = vehicules.filter((v) => v.clientId === id).length;
+  if (nbVehicules > 0) {
+    toast('Impossible : ce client a ' + nbVehicules + ' véhicule(s) associé(s)', 'ko');
+    return;
+  }
+  if (!confirm('Supprimer ce client ?')) return;
+  try {
+    await deleteDoc(doc(db, 'clients', id));
+    await journaliser('clients', 'suppression', id, {});
+    toast('Client supprimé');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'ko');
+  }
+}
+
+// --- VEHICULES ---
+onSnapshot(collection(db, 'vehicules'), (snap) => {
+  vehicules = [];
+  snap.forEach((d) => vehicules.push({ id: d.id, ...d.data() }));
+  vehicules.sort((a, b) => (a.immatriculation || '').localeCompare(b.immatriculation || ''));
+  rendreVehicules();
+  rendreClients();
+  rendreDossiers();
+});
+
+function nomClient(clientId) {
+  const c = clients.find((x) => x.id === clientId);
+  return c ? c.nom : '—';
+}
+
+function rendreVehicules() {
+  const terme = (document.getElementById('rechercheVehicules').value || '').toLowerCase();
+  const filtres = vehicules.filter((v) => {
+    const texte = ((v.immatriculation || '') + (v.marque || '') + nomClient(v.clientId)).toLowerCase();
+    return !terme || texte.includes(terme);
+  });
+  const corps = document.getElementById('corpsTableVehicules');
+  document.getElementById('videVehicules').style.display = filtres.length ? 'none' : 'block';
+  corps.innerHTML = filtres.map((v) => `<tr>
+    <td><strong>${echapper(v.immatriculation)}</strong></td>
+    <td>${echapper(v.marque || '')} ${echapper(v.modele || '')}</td>
+    <td>${echapper(v.annee || '—')}</td>
+    <td>${echapper(nomClient(v.clientId))}</td>
+    <td>${v.kilometrage ? Number(v.kilometrage).toLocaleString('fr-FR') + ' km' : '—'}</td>
+    <td>
+      <button class="lien-action modifier" data-modifier-vehicule="${v.id}">Modifier</button>
+      <button class="lien-action supprimer" data-supprimer-vehicule="${v.id}">Supprimer</button>
+    </td>
+  </tr>`).join('');
+  corps.querySelectorAll('[data-modifier-vehicule]').forEach((b) => b.addEventListener('click', () => ouvrirVehiculePourModification(b.dataset.modifierVehicule)));
+  corps.querySelectorAll('[data-supprimer-vehicule]').forEach((b) => b.addEventListener('click', () => supprimerVehicule(b.dataset.supprimerVehicule)));
+}
+document.getElementById('rechercheVehicules').addEventListener('input', rendreVehicules);
+
+function reinitialiserFormulaireVehicule() {
+  document.getElementById('vehiculeId').value = '';
+  ['vehiculeImmat','vehiculeVin','vehiculeMarque','vehiculeModele','vehiculeVersion','vehiculeAnnee','vehiculeKm','vehiculeCouleur','vehiculeMotorisation'].forEach((id) => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('vehiculeBoite').value = '';
+  document.getElementById('vehiculeClientId').value = '';
+}
+
+document.getElementById('boutonNouveauVehicule').addEventListener('click', () => {
+  reinitialiserFormulaireVehicule();
+  document.getElementById('titreModaleVehicule').textContent = 'Nouveau véhicule';
+  ouvrirModale('modaleVehicule');
+});
+
+function ouvrirVehiculePourModification(id) {
+  const v = vehicules.find((x) => x.id === id);
+  if (!v) return;
+  document.getElementById('vehiculeId').value = v.id;
+  document.getElementById('vehiculeClientId').value = v.clientId || '';
+  document.getElementById('vehiculeImmat').value = v.immatriculation || '';
+  document.getElementById('vehiculeVin').value = v.vin || '';
+  document.getElementById('vehiculeMarque').value = v.marque || '';
+  document.getElementById('vehiculeModele').value = v.modele || '';
+  document.getElementById('vehiculeVersion').value = v.version || '';
+  document.getElementById('vehiculeAnnee').value = v.annee || '';
+  document.getElementById('vehiculeKm').value = v.kilometrage || '';
+  document.getElementById('vehiculeCouleur').value = v.couleur || '';
+  document.getElementById('vehiculeMotorisation').value = v.motorisation || '';
+  document.getElementById('vehiculeBoite').value = v.boite || '';
+  document.getElementById('titreModaleVehicule').textContent = 'Modifier ' + v.immatriculation;
+  ouvrirModale('modaleVehicule');
+}
+
+document.getElementById('boutonSauverVehicule').addEventListener('click', async () => {
+  const immatriculation = document.getElementById('vehiculeImmat').value.trim();
+  const clientId = document.getElementById('vehiculeClientId').value;
+  if (!immatriculation) { toast("L'immatriculation est obligatoire", 'ko'); return; }
+  if (!clientId) { toast('Sélectionnez le client propriétaire', 'ko'); return; }
+  const id = document.getElementById('vehiculeId').value;
+  const donnees = {
+    clientId,
+    immatriculation,
+    vin: document.getElementById('vehiculeVin').value.trim(),
+    marque: document.getElementById('vehiculeMarque').value.trim(),
+    modele: document.getElementById('vehiculeModele').value.trim(),
+    version: document.getElementById('vehiculeVersion').value.trim(),
+    annee: document.getElementById('vehiculeAnnee').value ? parseInt(document.getElementById('vehiculeAnnee').value) : null,
+    kilometrage: document.getElementById('vehiculeKm').value ? parseInt(document.getElementById('vehiculeKm').value) : 0,
+    couleur: document.getElementById('vehiculeCouleur').value.trim(),
+    motorisation: document.getElementById('vehiculeMotorisation').value.trim(),
+    boite: document.getElementById('vehiculeBoite').value,
+  };
+  try {
+    if (id) {
+      await updateDoc(doc(db, 'vehicules', id), donnees);
+      await journaliser('vehicules', 'modification', id, { immatriculation });
+      toast('Véhicule mis à jour');
+    } else {
+      donnees.creeLe = serverTimestamp();
+      const ref = await addDoc(collection(db, 'vehicules'), donnees);
+      await journaliser('vehicules', 'creation', ref.id, { immatriculation });
+      toast('Véhicule créé');
+    }
+    fermerModale('modaleVehicule');
+    // Si on venait du dossier, on rafraîchit le select véhicule du dossier
+    if (document.getElementById('dossierClientId').value === clientId) remplirSelectVehiculesPourClient(clientId);
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'ko');
+  }
+});
+
+async function supprimerVehicule(id) {
+  const nbDossiers = dossiers.filter((d) => d.vehiculeId === id).length;
+  if (nbDossiers > 0) {
+    toast('Impossible : ce véhicule a ' + nbDossiers + ' dossier(s) associé(s)', 'ko');
+    return;
+  }
+  if (!confirm('Supprimer ce véhicule ?')) return;
+  try {
+    await deleteDoc(doc(db, 'vehicules', id));
+    await journaliser('vehicules', 'suppression', id, {});
+    toast('Véhicule supprimé');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'ko');
+  }
+}
+
+// --- DOSSIERS ---
+onSnapshot(collection(db, 'dossiers'), (snap) => {
+  dossiers = [];
+  snap.forEach((d) => dossiers.push({ id: d.id, ...d.data() }));
+  dossiers.sort((a, b) => (b.numero || '').localeCompare(a.numero || ''));
+  rendreDossiers();
+});
+
+const COULEURS_STATUT = {
+  'Réception': '#EAF1FA;color:#185FA5',
+  'Diagnostic': '#FEF3C7;color:#92400E',
+  'Attente validation': '#FFEAD5;color:#C2410C',
+  'Pièces commandées': '#DBEAFE;color:#1E40AF',
+  'En réparation': '#EDE9FE;color:#5B21B6',
+  'Contrôle qualité': '#D1FAE5;color:#065F46',
+  'Prêt à livrer': '#D1FAE5;color:#166534',
+  'Livré': '#F1EFE9;color:#4A4941',
+  'Annulé': '#FCEBEB;color:#D64545',
+};
+function badgeStatut(statut) {
+  const style = COULEURS_STATUT[statut] || '#F1EFE9;color:#4A4941';
+  return `<span class="badge-statut" style="background:${style.split(';')[0]};${style.split(';')[1]}">${echapper(statut || '—')}</span>`;
+}
+
+function nomVehicule(vehiculeId) {
+  const v = vehicules.find((x) => x.id === vehiculeId);
+  return v ? v.immatriculation + (v.marque ? ' — ' + v.marque : '') : '—';
+}
+
+function rendreDossiers() {
+  const terme = (document.getElementById('rechercheDossiers').value || '').toLowerCase();
+  const filtres = dossiers.filter((d) => {
+    const texte = ((d.numero || '') + nomClient(d.clientId) + nomVehicule(d.vehiculeId)).toLowerCase();
+    return !terme || texte.includes(terme);
+  });
+  const corps = document.getElementById('corpsTableDossiers');
+  document.getElementById('videDossiers').style.display = filtres.length ? 'none' : 'block';
+  corps.innerHTML = filtres.map((d) => {
+    const reste = (Number(d.montantFacture) || 0) - (Number(d.montantPaye) || 0);
+    return `<tr>
+      <td><strong style="font-family:'JetBrains Mono',monospace;font-size:12px">${echapper(d.numero)}</strong></td>
+      <td>${echapper(nomClient(d.clientId))}</td>
+      <td>${echapper(nomVehicule(d.vehiculeId))}</td>
+      <td>${badgeStatut(d.statut)}</td>
+      <td>${echapper(d.dateEntree || '—')}</td>
+      <td>${echapper(d.dateSortiePrevue || '—')}</td>
+      <td>${formaterFCFA(reste)}</td>
+      <td>
+        <button class="lien-action modifier" data-modifier-dossier="${d.id}">Modifier</button>
+        <button class="lien-action supprimer" data-supprimer-dossier="${d.id}">Supprimer</button>
+      </td>
+    </tr>`;
+  }).join('');
+  corps.querySelectorAll('[data-modifier-dossier]').forEach((b) => b.addEventListener('click', () => ouvrirDossierPourModification(b.dataset.modifierDossier)));
+  corps.querySelectorAll('[data-supprimer-dossier]').forEach((b) => b.addEventListener('click', () => supprimerDossier(b.dataset.supprimerDossier)));
+}
+document.getElementById('rechercheDossiers').addEventListener('input', rendreDossiers);
+
+function remplirSelectVehiculesPourClient(clientId) {
+  const select = document.getElementById('dossierVehiculeId');
+  if (!clientId) {
+    select.innerHTML = '<option value="">-- Sélectionner d\'abord un client --</option>';
+    return;
+  }
+  const vehiculesDuClient = vehicules.filter((v) => v.clientId === clientId);
+  select.innerHTML = '<option value="">-- Sélectionner un véhicule --</option>' +
+    vehiculesDuClient.map((v) => `<option value="${v.id}">${echapper(v.immatriculation)}${v.marque ? ' — ' + echapper(v.marque) : ''}</option>`).join('');
+  if (!vehiculesDuClient.length) {
+    select.innerHTML = '<option value="">-- Aucun véhicule pour ce client --</option>';
+  }
+}
+document.getElementById('dossierClientId').addEventListener('change', (e) => {
+  remplirSelectVehiculesPourClient(e.target.value);
+});
+
+function reinitialiserFormulaireDossier() {
+  document.getElementById('dossierId').value = '';
+  document.getElementById('dossierClientId').value = '';
+  remplirSelectVehiculesPourClient('');
+  document.getElementById('dossierStatut').value = 'Réception';
+  document.getElementById('dossierMecanicien').value = '';
+  document.getElementById('dossierDateEntree').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('dossierDateSortie').value = '';
+  document.getElementById('dossierMontantDevis').value = '';
+  document.getElementById('dossierMontantFacture').value = '';
+  document.getElementById('dossierMontantPaye').value = '';
+  document.getElementById('dossierNotes').value = '';
+}
+
+document.getElementById('boutonNouveauDossier').addEventListener('click', () => {
+  reinitialiserFormulaireDossier();
+  document.getElementById('titreModaleDossier').textContent = 'Nouveau dossier';
+  ouvrirModale('modaleDossier');
+});
+
+function ouvrirDossierPourModification(id) {
+  const d = dossiers.find((x) => x.id === id);
+  if (!d) return;
+  document.getElementById('dossierId').value = d.id;
+  document.getElementById('dossierClientId').value = d.clientId || '';
+  remplirSelectVehiculesPourClient(d.clientId || '');
+  document.getElementById('dossierVehiculeId').value = d.vehiculeId || '';
+  document.getElementById('dossierStatut').value = d.statut || 'Réception';
+  document.getElementById('dossierMecanicien').value = d.mecanicien || '';
+  document.getElementById('dossierDateEntree').value = d.dateEntree || '';
+  document.getElementById('dossierDateSortie').value = d.dateSortiePrevue || '';
+  document.getElementById('dossierMontantDevis').value = d.montantDevis || '';
+  document.getElementById('dossierMontantFacture').value = d.montantFacture || '';
+  document.getElementById('dossierMontantPaye').value = d.montantPaye || '';
+  document.getElementById('dossierNotes').value = d.notes || '';
+  document.getElementById('titreModaleDossier').textContent = 'Dossier ' + d.numero;
+  ouvrirModale('modaleDossier');
+}
+
+document.getElementById('boutonSauverDossier').addEventListener('click', async () => {
+  const clientId = document.getElementById('dossierClientId').value;
+  const vehiculeId = document.getElementById('dossierVehiculeId').value;
+  if (!clientId) { toast('Sélectionnez un client', 'ko'); return; }
+  if (!vehiculeId) { toast('Sélectionnez un véhicule', 'ko'); return; }
+  const id = document.getElementById('dossierId').value;
+  const ancienStatut = id ? (dossiers.find((x) => x.id === id) || {}).statut : null;
+  const nouveauStatut = document.getElementById('dossierStatut').value;
+  const donnees = {
+    clientId,
+    vehiculeId,
+    statut: nouveauStatut,
+    mecanicien: document.getElementById('dossierMecanicien').value.trim(),
+    dateEntree: document.getElementById('dossierDateEntree').value,
+    dateSortiePrevue: document.getElementById('dossierDateSortie').value,
+    montantDevis: document.getElementById('dossierMontantDevis').value ? parseInt(document.getElementById('dossierMontantDevis').value) : 0,
+    montantFacture: document.getElementById('dossierMontantFacture').value ? parseInt(document.getElementById('dossierMontantFacture').value) : 0,
+    montantPaye: document.getElementById('dossierMontantPaye').value ? parseInt(document.getElementById('dossierMontantPaye').value) : 0,
+    notes: document.getElementById('dossierNotes').value.trim(),
+  };
+  try {
+    if (id) {
+      await updateDoc(doc(db, 'dossiers', id), donnees);
+      if (ancienStatut && ancienStatut !== nouveauStatut) {
+        await journaliser('dossiers', 'changement_statut', id, { avant: ancienStatut, apres: nouveauStatut });
+      } else {
+        await journaliser('dossiers', 'modification', id, {});
+      }
+      toast('Dossier mis à jour');
+    } else {
+      const numero = await prochainNumero('DOS');
+      donnees.numero = numero;
+      donnees.creeLe = serverTimestamp();
+      const ref = await addDoc(collection(db, 'dossiers'), donnees);
+      await journaliser('dossiers', 'creation', ref.id, { numero });
+      toast('Dossier ' + numero + ' créé');
+    }
+    fermerModale('modaleDossier');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'ko');
+  }
+});
+
+async function supprimerDossier(id) {
+  if (!confirm('Supprimer ce dossier ? Cette action est définitive.')) return;
+  try {
+    await deleteDoc(doc(db, 'dossiers', id));
+    await journaliser('dossiers', 'suppression', id, {});
+    toast('Dossier supprimé');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'ko');
+  }
+}
+
+// --- Raccourcis "créer un client / véhicule" depuis le formulaire dossier ---
+document.getElementById('boutonNouveauClientDepuisDossier').addEventListener('click', () => {
+  reinitialiserFormulaireClient();
+  document.getElementById('titreModaleClient').textContent = 'Nouveau client';
+  ouvrirModale('modaleClient');
+});
+document.getElementById('boutonNouveauVehiculeDepuisDossier').addEventListener('click', () => {
+  const clientId = document.getElementById('dossierClientId').value;
+  if (!clientId) { toast('Sélectionnez d\'abord un client', 'ko'); return; }
+  reinitialiserFormulaireVehicule();
+  document.getElementById('vehiculeClientId').value = clientId;
+  document.getElementById('titreModaleVehicule').textContent = 'Nouveau véhicule';
+  ouvrirModale('modaleVehicule');
+});
+
+// --- Utilitaire ---
+function echapper(texte) {
+  if (texte === null || texte === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = String(texte);
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>
