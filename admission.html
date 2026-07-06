@@ -235,9 +235,33 @@
     </div>
   </div>
 
-  <!-- 3. ETAT DES LIEUX -->
+  <!-- 3. CONDUCTEUR -->
   <div class="section">
-    <div class="titre-section"><span class="numero-section">3</span>État des lieux</div>
+    <div class="titre-section"><span class="numero-section">3</span>Conducteur assigné</div>
+    <div class="sous-titre-section">La personne qui utilise le véhicule au quotidien, si différente du client (utile pour les véhicules de société).</div>
+    <div class="bascule">
+      <button class="bouton-bascule actif" id="basculeConducteurExistant" data-mode="existant">Conducteur existant</button>
+      <button class="bouton-bascule" id="basculeConducteurNouveau" data-mode="nouveau">Nouveau conducteur</button>
+    </div>
+
+    <div id="blocConducteurExistant">
+      <div class="champ">
+        <select id="conducteurSelect"><option value="">-- Aucun / Non affecté --</option></select>
+      </div>
+    </div>
+
+    <div id="blocConducteurNouveau" style="display:none">
+      <div class="grille-champs">
+        <div class="champ"><label>Nom</label><input type="text" id="nouveauConducteurNom"></div>
+        <div class="champ"><label>Téléphone</label><input type="text" id="nouveauConducteurTelephone"></div>
+        <div class="champ pleine"><label>Fonction</label><input type="text" id="nouveauConducteurFonction" placeholder="Ex : chauffeur, chef de chantier..."></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. ETAT DES LIEUX -->
+  <div class="section">
+    <div class="titre-section"><span class="numero-section">4</span>État des lieux</div>
     <div class="sous-titre-section">Constat visuel à l'arrivée du véhicule — sert de référence pour la livraison.</div>
 
     <div class="grille-champs" style="margin-bottom:16px">
@@ -261,9 +285,9 @@
     <div class="champ pleine" style="margin-top:10px"><label>Notes générales sur l'état</label><textarea id="notesEtat" rows="2"></textarea></div>
   </div>
 
-  <!-- 4. PHOTOS (placeholder) -->
+  <!-- 5. PHOTOS (placeholder) -->
   <div class="section">
-    <div class="titre-section"><span class="numero-section">4</span>Photos</div>
+    <div class="titre-section"><span class="numero-section">5</span>Photos</div>
     <div class="sous-titre-section">Photos du véhicule à l'admission (avant, arrière, côtés, intérieur).</div>
     <div class="placeholder-photos">
       <div class="icone">📷</div>
@@ -272,9 +296,9 @@
     </div>
   </div>
 
-  <!-- 5. SIGNATURE -->
+  <!-- 6. SIGNATURE -->
   <div class="section">
-    <div class="titre-section"><span class="numero-section">5</span>Signature du client</div>
+    <div class="titre-section"><span class="numero-section">6</span>Signature du client</div>
     <div class="sous-titre-section">Le client signe pour valider l'état des lieux constaté ci-dessus.</div>
     <div class="zone-signature">
       <canvas id="canvasSignature"></canvas>
@@ -303,6 +327,7 @@
       <tr><td><strong>Téléphone</strong></td><td id="orTelephone"></td></tr>
       <tr><td><strong>Véhicule</strong></td><td id="orVehicule"></td></tr>
       <tr><td><strong>Immatriculation</strong></td><td id="orImmat"></td></tr>
+      <tr><td><strong>Conducteur assigné</strong></td><td id="orConducteur"></td></tr>
       <tr><td><strong>Kilométrage</strong></td><td id="orKm"></td></tr>
       <tr><td><strong>Carburant</strong></td><td id="orCarburant"></td></tr>
       <tr><td><strong>Rayures</strong></td><td id="orRayures"></td></tr>
@@ -357,6 +382,7 @@ function echapper(texte) {
 // --- Données en direct ---
 let clients = [];
 let vehicules = [];
+let conducteurs = [];
 
 onSnapshot(collection(db, 'clients'), (snap) => {
   clients = [];
@@ -368,6 +394,12 @@ onSnapshot(collection(db, 'vehicules'), (snap) => {
   vehicules = [];
   snap.forEach((d) => vehicules.push({ id: d.id, ...d.data() }));
   remplirSelectVehiculesPourClientCourant();
+});
+onSnapshot(collection(db, 'conducteurs'), (snap) => {
+  conducteurs = [];
+  snap.forEach((d) => conducteurs.push({ id: d.id, ...d.data() }));
+  conducteurs.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+  remplirSelectConducteursPourClientCourant();
 });
 
 function remplirSelectClients() {
@@ -393,7 +425,28 @@ function remplirSelectVehiculesPourClientCourant() {
   select.innerHTML = '<option value="">-- Sélectionner un véhicule --</option>' +
     vehiculesDuClient.map((v) => `<option value="${v.id}">${echapper(v.immatriculation)}${v.marque ? ' — ' + echapper(v.marque) : ''}</option>`).join('');
 }
-document.getElementById('clientSelect').addEventListener('change', remplirSelectVehiculesPourClientCourant);
+document.getElementById('clientSelect').addEventListener('change', () => {
+  remplirSelectVehiculesPourClientCourant();
+  remplirSelectConducteursPourClientCourant();
+});
+
+function remplirSelectConducteursPourClientCourant() {
+  const clientId = document.getElementById('clientSelect').value;
+  const select = document.getElementById('conducteurSelect');
+  const conducteursDuClient = clientId ? conducteurs.filter((c) => c.clientId === clientId) : [];
+  select.innerHTML = '<option value="">-- Aucun / Non affecté --</option>' +
+    conducteursDuClient.map((c) => `<option value="${c.id}">${echapper(c.nom)}${c.fonction ? ' — ' + echapper(c.fonction) : ''}</option>`).join('');
+}
+
+document.getElementById('vehiculeSelect').addEventListener('change', (e) => {
+  const vehicule = vehicules.find((v) => v.id === e.target.value);
+  if (vehicule && vehicule.conducteurId) {
+    const select = document.getElementById('conducteurSelect');
+    if (Array.from(select.options).some((o) => o.value === vehicule.conducteurId)) {
+      select.value = vehicule.conducteurId;
+    }
+  }
+});
 
 // --- Bascules Client / Véhicule (existant vs nouveau) ---
 function configurerBascule(idExistantBtn, idNouveauBtn, idBlocExistant, idBlocNouveau) {
@@ -412,6 +465,7 @@ function configurerBascule(idExistantBtn, idNouveauBtn, idBlocExistant, idBlocNo
 }
 configurerBascule('basculeClientExistant', 'basculeClientNouveau', 'blocClientExistant', 'blocClientNouveau');
 configurerBascule('basculeVehiculeExistant', 'basculeVehiculeNouveau', 'blocVehiculeExistant', 'blocVehiculeNouveau');
+configurerBascule('basculeConducteurExistant', 'basculeConducteurNouveau', 'blocConducteurExistant', 'blocConducteurNouveau');
 
 // --- Accessoires ---
 const LISTE_ACCESSOIRES = ['Roue de secours', 'Cric', 'Triangle de signalisation', 'Extincteur', 'Autoradio', 'Tapis de sol', 'Chargeur', 'Manuel du véhicule'];
@@ -533,6 +587,25 @@ async function creerOuRecupererVehicule(clientId) {
   return ref.id;
 }
 
+async function creerOuRecupererConducteur(clientId) {
+  const modeNouveau = document.getElementById('basculeConducteurNouveau').classList.contains('actif');
+  if (!modeNouveau) {
+    return document.getElementById('conducteurSelect').value || null;
+  }
+  const nom = document.getElementById('nouveauConducteurNom').value.trim();
+  if (!nom) return null; // Conducteur optionnel : si aucun nom saisi, on n'en crée pas
+  const donnees = {
+    clientId,
+    nom,
+    telephone: document.getElementById('nouveauConducteurTelephone').value.trim(),
+    fonction: document.getElementById('nouveauConducteurFonction').value.trim(),
+    creeLe: serverTimestamp(),
+  };
+  const ref = await addDoc(collection(db, 'conducteurs'), donnees);
+  await journaliser('conducteurs', 'creation', ref.id, { nom, source: 'admission' });
+  return ref.id;
+}
+
 function accessoiresCoches() {
   const coches = Array.from(document.querySelectorAll('[data-accessoire]:checked')).map((c) => c.dataset.accessoire);
   const autre = document.getElementById('accessoireAutre').value.trim();
@@ -543,12 +616,14 @@ function accessoiresCoches() {
 async function enregistrerAdmission() {
   const clientId = await creerOuRecupererClient();
   const vehiculeId = await creerOuRecupererVehicule(clientId);
+  const conducteurId = await creerOuRecupererConducteur(clientId);
   const numero = await prochainNumero('DOS');
 
   const donneesDossier = {
     numero,
     clientId,
     vehiculeId,
+    conducteurId,
     statut: 'Réception',
     dateEntree: new Date().toISOString().slice(0, 10),
     dateSortiePrevue: '',
@@ -610,6 +685,8 @@ document.getElementById('boutonImprimerOR').addEventListener('click', async (e) 
     document.getElementById('orTelephone').textContent = client.telephone || '—';
     document.getElementById('orVehicule').textContent = (vehicule.marque || '') + ' ' + (vehicule.modele || '');
     document.getElementById('orImmat').textContent = vehicule.immatriculation || '';
+    const conducteur = conducteurs.find((c) => c.id === dossier.conducteurId);
+    document.getElementById('orConducteur').textContent = conducteur ? conducteur.nom + (conducteur.fonction ? ' — ' + conducteur.fonction : '') : 'Non affecté (client conduit lui-même)';
     document.getElementById('orKm').textContent = dossier.kilometrageAdmission ? dossier.kilometrageAdmission.toLocaleString('fr-FR') + ' km' : '—';
     document.getElementById('orCarburant').textContent = dossier.niveauCarburant || '—';
     document.getElementById('orRayures').textContent = dossier.rayures || 'Aucune';

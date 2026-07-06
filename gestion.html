@@ -210,7 +210,7 @@
     <div class="carte-tableau">
       <table>
         <thead><tr>
-          <th>Immatriculation</th><th>Marque / Modèle</th><th>Année</th><th>Client</th><th>Kilométrage</th><th>Actions</th>
+          <th>Immatriculation</th><th>Marque / Modèle</th><th>Année</th><th>Client</th><th>Conducteur</th><th>Kilométrage</th><th>Actions</th>
         </tr></thead>
         <tbody id="corpsTableVehicules"></tbody>
       </table>
@@ -227,7 +227,7 @@
     <div class="carte-tableau">
       <table>
         <thead><tr>
-          <th>N° Dossier</th><th>Client</th><th>Véhicule</th><th>Statut</th><th>Entrée</th><th>Sortie prévue</th><th>Reste à payer</th><th>Actions</th>
+          <th>N° Dossier</th><th>Client</th><th>Véhicule</th><th>Conducteur</th><th>Statut</th><th>Entrée</th><th>Sortie prévue</th><th>Reste à payer</th><th>Actions</th>
         </tr></thead>
         <tbody id="corpsTableDossiers"></tbody>
       </table>
@@ -269,6 +269,15 @@
       <div class="champ pleine" style="margin-bottom:14px">
         <label>Client propriétaire *</label>
         <select id="vehiculeClientId"><option value="">-- Sélectionner un client --</option></select>
+      </div>
+      <div class="champ pleine" style="margin-bottom:14px">
+        <label>Conducteur habituel (optionnel)</label>
+        <select id="vehiculeConducteurId"><option value="">-- Aucun / Non affecté --</option></select>
+        <div id="nouveauConducteurVehiculeWrap" style="display:none;margin-top:10px;grid-template-columns:1fr 1fr;gap:10px">
+          <input type="text" id="nouveauConducteurVehiculeNom" placeholder="Nom du conducteur *">
+          <input type="text" id="nouveauConducteurVehiculeTelephone" placeholder="Téléphone">
+          <input type="text" id="nouveauConducteurVehiculeFonction" placeholder="Fonction (ex : chauffeur, chef de chantier)" style="grid-column:1/-1">
+        </div>
       </div>
       <div class="grille-champs">
         <div class="champ"><label>Immatriculation *</label><input type="text" id="vehiculeImmat"></div>
@@ -317,6 +326,20 @@
           </div>
         </div>
         <button class="bouton-texte" id="boutonNouveauVehiculeDepuisDossier" style="margin-top:8px">+ Créer un nouveau véhicule pour ce client</button>
+      </div>
+
+      <div class="bloc-selection">
+        <div class="titre-bloc">Conducteur assigné (optionnel)</div>
+        <div class="grille-champs">
+          <div class="champ pleine">
+            <select id="dossierConducteurId"><option value="">-- Aucun / Non affecté --</option></select>
+          </div>
+        </div>
+        <div id="nouveauConducteurDossierWrap" style="display:none;margin-top:10px;grid-template-columns:1fr 1fr;gap:10px">
+          <input type="text" id="nouveauConducteurDossierNom" placeholder="Nom du conducteur *">
+          <input type="text" id="nouveauConducteurDossierTelephone" placeholder="Téléphone">
+          <input type="text" id="nouveauConducteurDossierFonction" placeholder="Fonction" style="grid-column:1/-1">
+        </div>
       </div>
 
       <div class="grille-champs">
@@ -409,6 +432,79 @@ activerOnglet((window.location.hash || '#clients').slice(1));
 let clients = [];
 let vehicules = [];
 let dossiers = [];
+let conducteurs = [];
+
+// --- CONDUCTEURS ---
+onSnapshot(collection(db, 'conducteurs'), (snap) => {
+  conducteurs = [];
+  snap.forEach((d) => conducteurs.push({ id: d.id, ...d.data() }));
+  conducteurs.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+  // Rafraîchir les selects de conducteurs ouverts, sans perdre la saisie en cours
+  actualiserSelectConducteurVehicule();
+  actualiserSelectConducteurDossier();
+  rendreVehicules();
+  rendreDossiers();
+});
+
+function optionsConducteursPourClient(clientId) {
+  const conducteursDuClient = conducteurs.filter((c) => c.clientId === clientId);
+  return '<option value="">-- Aucun / Non affecté --</option>' +
+    conducteursDuClient.map((c) => `<option value="${c.id}">${echapper(c.nom)}${c.fonction ? ' — ' + echapper(c.fonction) : ''}</option>`).join('') +
+    '<option value="__nouveau__">+ Nouveau conducteur...</option>';
+}
+
+function nomConducteur(conducteurId) {
+  if (!conducteurId) return '—';
+  const c = conducteurs.find((x) => x.id === conducteurId);
+  return c ? c.nom : '—';
+}
+
+function actualiserSelectConducteurVehicule() {
+  const clientId = document.getElementById('vehiculeClientId').value;
+  const select = document.getElementById('vehiculeConducteurId');
+  const valeurActuelle = select.value;
+  select.innerHTML = optionsConducteursPourClient(clientId);
+  if (valeurActuelle && (valeurActuelle === '__nouveau__' || conducteurs.some((c) => c.id === valeurActuelle))) select.value = valeurActuelle;
+}
+
+function actualiserSelectConducteurDossier() {
+  const clientId = document.getElementById('dossierClientId').value;
+  const select = document.getElementById('dossierConducteurId');
+  const valeurActuelle = select.value;
+  select.innerHTML = optionsConducteursPourClient(clientId);
+  if (valeurActuelle && (valeurActuelle === '__nouveau__' || conducteurs.some((c) => c.id === valeurActuelle))) select.value = valeurActuelle;
+}
+
+document.getElementById('vehiculeConducteurId').addEventListener('change', (e) => {
+  document.getElementById('nouveauConducteurVehiculeWrap').style.display = e.target.value === '__nouveau__' ? 'grid' : 'none';
+});
+document.getElementById('dossierConducteurId').addEventListener('change', (e) => {
+  document.getElementById('nouveauConducteurDossierWrap').style.display = e.target.value === '__nouveau__' ? 'grid' : 'none';
+});
+
+async function resoudreConducteur(clientId, selectId, prefixeChampsNouveau) {
+  const valeur = document.getElementById(selectId).value;
+  if (!valeur) return null;
+  if (valeur !== '__nouveau__') return valeur;
+  const nom = document.getElementById(prefixeChampsNouveau + 'Nom').value.trim();
+  if (!nom) throw new Error('Le nom du nouveau conducteur est obligatoire.');
+  const donnees = {
+    clientId,
+    nom,
+    telephone: document.getElementById(prefixeChampsNouveau + 'Telephone').value.trim(),
+    fonction: document.getElementById(prefixeChampsNouveau + 'Fonction').value.trim(),
+    creeLe: serverTimestamp(),
+  };
+  const ref = await addDoc(collection(db, 'conducteurs'), donnees);
+  conducteurs.push({ id: ref.id, ...donnees });
+  await journaliser('conducteurs', 'creation', ref.id, { nom });
+  return ref.id;
+}
+
+document.getElementById('vehiculeClientId').addEventListener('change', () => {
+  actualiserSelectConducteurVehicule();
+  document.getElementById('nouveauConducteurVehiculeWrap').style.display = 'none';
+});
 
 // --- CLIENTS ---
 onSnapshot(collection(db, 'clients'), (snap) => {
@@ -569,6 +665,7 @@ function rendreVehicules() {
     <td>${echapper(v.marque || '')} ${echapper(v.modele || '')}</td>
     <td>${echapper(v.annee || '—')}</td>
     <td>${echapper(nomClient(v.clientId))}</td>
+    <td>${echapper(nomConducteur(v.conducteurId))}</td>
     <td>${v.kilometrage ? Number(v.kilometrage).toLocaleString('fr-FR') + ' km' : '—'}</td>
     <td>
       <button class="lien-action modifier" data-modifier-vehicule="${v.id}">Modifier</button>
@@ -587,6 +684,12 @@ function reinitialiserFormulaireVehicule() {
   });
   document.getElementById('vehiculeBoite').value = '';
   document.getElementById('vehiculeClientId').value = '';
+  document.getElementById('vehiculeConducteurId').innerHTML = optionsConducteursPourClient('');
+  document.getElementById('vehiculeConducteurId').value = '';
+  document.getElementById('nouveauConducteurVehiculeWrap').style.display = 'none';
+  ['nouveauConducteurVehiculeNom','nouveauConducteurVehiculeTelephone','nouveauConducteurVehiculeFonction'].forEach((id) => {
+    document.getElementById(id).value = '';
+  });
 }
 
 document.getElementById('boutonNouveauVehicule').addEventListener('click', () => {
@@ -610,6 +713,9 @@ function ouvrirVehiculePourModification(id) {
   document.getElementById('vehiculeCouleur').value = v.couleur || '';
   document.getElementById('vehiculeMotorisation').value = v.motorisation || '';
   document.getElementById('vehiculeBoite').value = v.boite || '';
+  document.getElementById('vehiculeConducteurId').innerHTML = optionsConducteursPourClient(v.clientId || '');
+  document.getElementById('vehiculeConducteurId').value = v.conducteurId || '';
+  document.getElementById('nouveauConducteurVehiculeWrap').style.display = 'none';
   document.getElementById('titreModaleVehicule').textContent = 'Modifier ' + v.immatriculation;
   ouvrirModale('modaleVehicule');
 }
@@ -620,8 +726,15 @@ document.getElementById('boutonSauverVehicule').addEventListener('click', async 
   if (!immatriculation) { toast("L'immatriculation est obligatoire", 'ko'); return; }
   if (!clientId) { toast('Sélectionnez le client propriétaire', 'ko'); return; }
   const id = document.getElementById('vehiculeId').value;
+  let conducteurId;
+  try {
+    conducteurId = await resoudreConducteur(clientId, 'vehiculeConducteurId', 'nouveauConducteurVehicule');
+  } catch (e) {
+    toast(e.message, 'ko'); return;
+  }
   const donnees = {
     clientId,
+    conducteurId,
     immatriculation,
     vin: document.getElementById('vehiculeVin').value.trim(),
     marque: document.getElementById('vehiculeMarque').value.trim(),
@@ -719,6 +832,7 @@ function rendreDossiers() {
       <td><strong style="font-family:'JetBrains Mono',monospace;font-size:12px">${echapper(d.numero)}</strong></td>
       <td>${echapper(nomClient(d.clientId))}</td>
       <td>${echapper(nomVehicule(d.vehiculeId))}</td>
+      <td>${echapper(nomConducteur(d.conducteurId))}</td>
       <td>${badgeStatut(d.statut)}</td>
       <td>${echapper(d.dateEntree || '—')}</td>
       <td>${echapper(d.dateSortiePrevue || '—')}</td>
@@ -749,12 +863,30 @@ function remplirSelectVehiculesPourClient(clientId) {
 }
 document.getElementById('dossierClientId').addEventListener('change', (e) => {
   remplirSelectVehiculesPourClient(e.target.value);
+  actualiserSelectConducteurDossier();
+  document.getElementById('dossierConducteurId').value = '';
+  document.getElementById('nouveauConducteurDossierWrap').style.display = 'none';
+});
+
+document.getElementById('dossierVehiculeId').addEventListener('change', (e) => {
+  const vehicule = vehicules.find((v) => v.id === e.target.value);
+  const select = document.getElementById('dossierConducteurId');
+  if (vehicule && vehicule.conducteurId && Array.from(select.options).some((o) => o.value === vehicule.conducteurId)) {
+    select.value = vehicule.conducteurId;
+    document.getElementById('nouveauConducteurDossierWrap').style.display = 'none';
+  }
 });
 
 function reinitialiserFormulaireDossier() {
   document.getElementById('dossierId').value = '';
   document.getElementById('dossierClientId').value = '';
   remplirSelectVehiculesPourClient('');
+  document.getElementById('dossierConducteurId').innerHTML = optionsConducteursPourClient('');
+  document.getElementById('dossierConducteurId').value = '';
+  document.getElementById('nouveauConducteurDossierWrap').style.display = 'none';
+  ['nouveauConducteurDossierNom','nouveauConducteurDossierTelephone','nouveauConducteurDossierFonction'].forEach((id) => {
+    document.getElementById(id).value = '';
+  });
   document.getElementById('dossierStatut').value = 'Réception';
   document.getElementById('dossierMecanicien').value = '';
   document.getElementById('dossierDateEntree').value = new Date().toISOString().slice(0, 10);
@@ -778,6 +910,9 @@ function ouvrirDossierPourModification(id) {
   document.getElementById('dossierClientId').value = d.clientId || '';
   remplirSelectVehiculesPourClient(d.clientId || '');
   document.getElementById('dossierVehiculeId').value = d.vehiculeId || '';
+  document.getElementById('dossierConducteurId').innerHTML = optionsConducteursPourClient(d.clientId || '');
+  document.getElementById('dossierConducteurId').value = d.conducteurId || '';
+  document.getElementById('nouveauConducteurDossierWrap').style.display = 'none';
   document.getElementById('dossierStatut').value = d.statut || 'Réception';
   document.getElementById('dossierMecanicien').value = d.mecanicien || '';
   document.getElementById('dossierDateEntree').value = d.dateEntree || '';
@@ -798,9 +933,16 @@ document.getElementById('boutonSauverDossier').addEventListener('click', async (
   const id = document.getElementById('dossierId').value;
   const ancienStatut = id ? (dossiers.find((x) => x.id === id) || {}).statut : null;
   const nouveauStatut = document.getElementById('dossierStatut').value;
+  let conducteurId;
+  try {
+    conducteurId = await resoudreConducteur(clientId, 'dossierConducteurId', 'nouveauConducteurDossier');
+  } catch (e) {
+    toast(e.message, 'ko'); return;
+  }
   const donnees = {
     clientId,
     vehiculeId,
+    conducteurId,
     statut: nouveauStatut,
     mecanicien: document.getElementById('dossierMecanicien').value.trim(),
     dateEntree: document.getElementById('dossierDateEntree').value,
@@ -860,6 +1002,7 @@ document.getElementById('boutonNouveauVehiculeDepuisDossier').addEventListener('
   if (!clientId) { toast('Sélectionnez d\'abord un client', 'ko'); return; }
   reinitialiserFormulaireVehicule();
   document.getElementById('vehiculeClientId').value = clientId;
+  actualiserSelectConducteurVehicule();
   document.getElementById('titreModaleVehicule').textContent = 'Nouveau véhicule';
   ouvrirModale('modaleVehicule');
 });
