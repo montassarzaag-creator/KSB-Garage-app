@@ -177,7 +177,7 @@
   <!-- 1. CLIENT -->
   <div class="section">
     <div class="titre-section"><span class="numero-section">1</span>Client</div>
-    <div class="sous-titre-section">Sélectionnez un client existant ou créez-en un nouveau.</div>
+    <div class="sous-titre-section">Sélectionnez un client existant ou créez-en un nouveau. C'est ce nom qui apparaîtra sur les factures — pour le chauffeur ou la personne qui utilise le véhicule, utilisez la section Conducteur ci-dessous.</div>
     <div class="bascule">
       <button class="bouton-bascule actif" id="basculeClientExistant" data-mode="existant">Client existant</button>
       <button class="bouton-bascule" id="basculeClientNouveau" data-mode="nouveau">Nouveau client</button>
@@ -191,13 +191,13 @@
 
     <div id="blocClientNouveau" style="display:none">
       <div class="grille-champs">
-        <div class="champ pleine"><label>Nom *</label><input type="text" id="nouveauClientNom"></div>
+        <div class="champ pleine"><label>Nom du client (société ou particulier) *</label><input type="text" id="nouveauClientNom" placeholder="Ex : SOROUBAT INTERNATIONAL, ou Jean Kouassi"></div>
         <div class="champ"><label>Téléphone</label><input type="text" id="nouveauClientTelephone" placeholder="+225 ..."></div>
         <div class="champ"><label>WhatsApp</label><input type="text" id="nouveauClientWhatsapp" placeholder="+225 ..."></div>
         <div class="champ pleine"><label>Adresse</label><input type="text" id="nouveauClientAdresse"></div>
         <div class="champ"><label>E-mail</label><input type="email" id="nouveauClientEmail"></div>
         <div class="champ"><label>NIF</label><input type="text" id="nouveauClientNif"></div>
-        <div class="champ pleine"><label>Entreprise</label><input type="text" id="nouveauClientEntreprise"></div>
+        <div class="champ pleine"><label>Nom commercial (si différent, optionnel)</label><input type="text" id="nouveauClientEntreprise"></div>
       </div>
     </div>
   </div>
