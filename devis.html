@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSB Garage Manager — Devis</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1A1A18">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --charbon: #1A1A18; --blanc-chaud: #F7F5F2; --carte: #FFFFFF;
+    --ambre: #E85D25; --ambre-fonce: #C2410C; --bleu-acier: #185FA5;
+    --graphite: #6B6A63; --bordure: #E7E4DA; --vert: #2E8B57; --erreur: #D64545; --gr: #F4F2ED;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--blanc-chaud); color: var(--charbon); min-height: 100vh; }
+
+  header {
+    background: var(--charbon); color: var(--blanc-chaud); padding: 14px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .marque-entete { display: flex; align-items: center; gap: 12px; }
+  .marque-entete .badge {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: conic-gradient(from 200deg, transparent 0deg, transparent 30deg, var(--ambre) 40deg, var(--ambre-fonce) 90deg, transparent 100deg, transparent 360deg);
+    -webkit-mask: radial-gradient(circle at center, transparent 48%, black 49%, black 62%, transparent 63%);
+            mask: radial-gradient(circle at center, transparent 48%, black 49%, black 62%, transparent 63%);
+  }
+  .marque-entete a { color: var(--blanc-chaud); text-decoration: none; font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 16px; }
+  .marque-entete a span { color: var(--ambre); }
+  .zone-utilisateur { display: flex; align-items: center; gap: 14px; font-size: 13px; }
+  #indicateurReseau {
+    display: flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 9px; border-radius: 20px; background: rgba(255,255,255,0.08);
+  }
+  #indicateurReseau .point { width: 6px; height: 6px; border-radius: 50%; background: var(--vert); }
+  #indicateurReseau.hors-ligne .point { background: var(--erreur); }
+  #indicateurReseau.hors-ligne { background: rgba(214,69,69,0.18); }
+  .bouton-deconnexion {
+    background: transparent; border: 1.5px solid #4A4941; color: var(--blanc-chaud);
+    padding: 6px 13px; border-radius: 7px; font-size: 12px; cursor: pointer;
+  }
+  .bouton-deconnexion:hover { border-color: var(--ambre); background: rgba(232,93,37,0.08); }
+
+  main { max-width: 1280px; margin: 0 auto; padding: 28px 32px 64px; }
+  .en-tete-page { margin-bottom: 20px; }
+  .en-tete-page .eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ambre-fonce); margin-bottom: 6px; display: block;
+  }
+  .en-tete-page h1 { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 28px; }
+
+  .barre-outils { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .barre-outils .recherche {
+    flex: 1; min-width: 220px; max-width: 380px; padding: 9px 13px; border: 1.5px solid var(--bordure);
+    border-radius: 8px; font-size: 13px; background: var(--carte);
+  }
+  .barre-outils .recherche:focus { outline: none; border-color: var(--bleu-acier); }
+  .bouton { padding: 9px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+  .bouton-principal { background: linear-gradient(135deg, var(--ambre) 0%, var(--ambre-fonce) 100%); color: #fff; }
+  .bouton-principal:hover { filter: brightness(1.06); }
+  .bouton-discret { background: var(--gr); color: var(--charbon); }
+  .bouton-discret:hover { background: var(--bordure); }
+  .bouton-secondaire { background: #fff; color: var(--bleu-acier); border: 1.5px solid var(--bleu-acier); }
+  .bouton-secondaire:hover { background: #EAF1FA; }
+  .bouton-petit { padding: 6px 11px; font-size: 12px; }
+
+  .carte-tableau { background: var(--carte); border: 1px solid var(--bordure); border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: var(--gr); padding: 10px 14px; text-align: left; font-size: 10.5px; font-weight: 600;
+    color: var(--graphite); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--bordure); white-space: nowrap;
+  }
+  td { padding: 11px 14px; border-bottom: 1px solid #F1EFE9; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #FAF8F4; }
+  .vide { text-align: center; padding: 50px 20px; color: var(--graphite); font-size: 13px; }
+
+  .lien-action { background: none; border: none; cursor: pointer; font-size: 13px; padding: 4px 8px; border-radius: 6px; margin-right: 4px; }
+  .lien-action.modifier { background: #EAF1FA; color: var(--bleu-acier); }
+  .lien-action.supprimer { background: #FCEBEB; color: var(--erreur); }
+  .lien-action:hover { filter: brightness(0.95); }
+
+  .badge-statut { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+
+  /* Modale */
+  .fond-modale { position: fixed; inset: 0; background: rgba(26,26,24,0.5); display: none; align-items: flex-start; justify-content: center; z-index: 1000; padding: 30px 20px; overflow-y: auto; }
+  .fond-modale.ouverte { display: flex; }
+  .modale { background: var(--carte); border-radius: 12px; width: 100%; max-width: 920px; }
+  .entete-modale { padding: 16px 22px; border-bottom: 1px solid var(--bordure); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: var(--carte); border-radius: 12px 12px 0 0; z-index: 1; }
+  .entete-modale h3 { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 15px; }
+  .fermer-modale { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--graphite); line-height: 1; }
+  .corps-modale { padding: 22px; }
+  .grille-champs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grille-champs .pleine { grid-column: 1 / -1; }
+  .champ { margin-bottom: 4px; }
+  .champ label { display: block; font-size: 11px; font-weight: 600; color: var(--graphite); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+  .champ input, .champ select, .champ textarea {
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--bordure); border-radius: 7px; font-size: 13px; font-family: 'Inter', sans-serif; background: #fff;
+  }
+  .champ input:focus, .champ select:focus, .champ textarea:focus { outline: none; border-color: var(--bleu-acier); }
+  .pied-modale { padding: 14px 22px; border-top: 1px solid var(--bordure); display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+
+  .bloc-info-dossier { background: var(--gr); border-radius: 8px; padding: 14px; margin-bottom: 16px; font-size: 13px; }
+  .bloc-info-dossier .titre-bloc { font-size: 11px; font-weight: 700; color: var(--graphite); text-transform: uppercase; margin-bottom: 8px; }
+  .bloc-info-dossier .ligne-info { display: flex; gap: 8px; margin-bottom: 3px; }
+  .bloc-info-dossier .ligne-info strong { min-width: 90px; color: var(--graphite); font-weight: 600; font-size: 12px; }
+
+  .table-lignes { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  .table-lignes th { font-size: 10px; padding: 7px 8px; background: var(--gr); }
+  .table-lignes td { padding: 6px; border-bottom: 1px solid #F1EFE9; }
+  .table-lignes input, .table-lignes select { padding: 6px 8px; font-size: 12px; border: 1.5px solid var(--bordure); border-radius: 6px; width: 100%; }
+  .table-lignes .col-total { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; white-space: nowrap; text-align: right; padding-right: 10px; }
+  .table-lignes .col-suppr { text-align: center; }
+  .bouton-suppr-ligne { background: #FCEBEB; color: var(--erreur); border: none; border-radius: 6px; width: 26px; height: 26px; cursor: pointer; font-size: 14px; }
+
+  .resume-devis { background: var(--gr); border-radius: 10px; padding: 16px; margin-top: 8px; }
+  .resume-devis .ligne-resume { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+  .resume-devis .ligne-resume.total { font-weight: 700; font-size: 15px; border-top: 1px solid var(--bordure); margin-top: 6px; padding-top: 10px; }
+  .resume-devis .marge-positive { color: var(--vert); font-weight: 600; }
+  .resume-devis .marge-nulle { color: var(--graphite); }
+
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--charbon); color: #fff; padding: 12px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all .25s; max-width: 320px;
+  }
+  #toast.visible { transform: translateY(0); opacity: 1; }
+  #toast.ok { border-left: 3px solid var(--vert); }
+  #toast.ko { border-left: 3px solid var(--erreur); }
+
+  #vueImprimable { display: none; }
+  @media print {
+    header, .barre-outils, .carte-tableau, #toast, .pied-modale, .fond-modale { display: none !important; }
+    main { max-width: 100%; padding: 0; }
+    #vueImprimable { display: block !important; }
+    #vueImprimable table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+    #vueImprimable th, #vueImprimable td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+  }
+
+  @media (max-width: 720px) {
+    .grille-champs { grid-template-columns: 1fr; }
+    main { padding: 20px 16px 48px; }
+    header { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marque-entete">
+    <div class="badge"></div>
+    <a href="home.html">KSB <span>Garage</span></a>
+  </div>
+  <div class="zone-utilisateur">
+    <span id="indicateurReseau"><span class="point"></span><span id="texteReseau">En ligne</span></span>
+    <span id="emailUtilisateur"></span>
+    <button class="bouton-deconnexion" id="boutonDeconnexion">Déconnexion</button>
+  </div>
+</header>
+
+<main>
+  <div class="en-tete-page">
+    <span class="eyebrow">Chiffrage</span>
+    <h1>Devis</h1>
+  </div>
+
+  <div class="barre-outils">
+    <input type="text" class="recherche" id="rechercheDevis" placeholder="Rechercher un devis (numéro, client, véhicule)...">
+    <button class="bouton bouton-principal" id="boutonNouveauDevis">+ Nouveau devis</button>
+  </div>
+
+  <div class="carte-tableau">
+    <table>
+      <thead><tr>
+        <th>N° Devis</th><th>Dossier</th><th>Client</th><th>Véhicule</th><th>Statut</th><th>Total</th><th>Marge</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="corpsTableDevis"></tbody>
+    </table>
+    <div class="vide" id="videDevis" style="display:none">Aucun devis pour l'instant.</div>
+  </div>
+</main>
+
+<!-- MODALE DEVIS -->
+<div class="fond-modale" id="modaleDevis">
+  <div class="modale">
+    <div class="entete-modale"><h3 id="titreModaleDevis">Nouveau devis</h3><button class="fermer-modale" data-fermer="modaleDevis">&times;</button></div>
+    <div class="corps-modale">
+      <input type="hidden" id="devisId">
+
+      <div class="grille-champs" style="margin-bottom:16px">
+        <div class="champ pleine">
+          <label>Dossier concerné *</label>
+          <select id="devisDossierId"><option value="">-- Sélectionner un dossier --</option></select>
+        </div>
+      </div>
+
+      <div class="bloc-info-dossier" id="blocInfoDossier" style="display:none">
+        <div class="titre-bloc">Récapitulatif</div>
+        <div class="ligne-info"><strong>Client</strong><span id="infoClient"></span></div>
+        <div class="ligne-info"><strong>Véhicule</strong><span id="infoVehicule"></span></div>
+        <div class="ligne-info"><strong>Conducteur</strong><span id="infoConducteur"></span></div>
+      </div>
+
+      <div class="grille-champs" style="margin-bottom:18px">
+        <div class="champ"><label>Statut</label>
+          <select id="devisStatut">
+            <option>Brouillon</option>
+            <option>Envoyé</option>
+            <option>Validé</option>
+            <option>Refusé</option>
+          </select>
+        </div>
+        <div class="champ"><label>Valide jusqu'au</label><input type="date" id="devisValidite"></div>
+      </div>
+
+      <label style="display:block;font-size:11px;font-weight:600;color:var(--graphite);text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px">Lignes du devis</label>
+      <table class="table-lignes">
+        <thead><tr>
+          <th style="width:14%">Catégorie</th>
+          <th>Désignation</th>
+          <th style="width:8%">Qté</th>
+          <th style="width:14%">Coût unit. (FCFA)</th>
+          <th style="width:14%">Prix vente unit. (FCFA)</th>
+          <th style="width:12%">Total</th>
+          <th style="width:5%"></th>
+        </tr></thead>
+        <tbody id="corpsLignesDevis"></tbody>
+      </table>
+      <button class="bouton bouton-discret bouton-petit" id="boutonAjouterLigne">+ Ajouter une ligne</button>
+
+      <div class="resume-devis">
+        <div class="ligne-resume"><span>Sous-total Pièces</span><span id="resumeSousTotalPieces">0 FCFA</span></div>
+        <div class="ligne-resume"><span>Marge Pièces</span><span id="resumeMargePieces">—</span></div>
+        <div class="ligne-resume" style="margin-top:8px"><span>Sous-total Main d'œuvre</span><span id="resumeSousTotalMainOeuvre">0 FCFA</span></div>
+        <div class="ligne-resume"><span>Marge Main d'œuvre</span><span id="resumeMargeMainOeuvre">—</span></div>
+        <div class="ligne-resume total"><span>Total général</span><span id="resumeTotalGeneral">0 FCFA</span></div>
+      </div>
+
+      <div class="champ pleine" style="margin-top:16px"><label>Notes</label><textarea id="devisNotes" rows="2"></textarea></div>
+    </div>
+    <div class="pied-modale">
+      <button class="bouton bouton-discret" data-fermer="modaleDevis">Annuler</button>
+      <button class="bouton bouton-secondaire" id="boutonImprimerDevis">Imprimer</button>
+      <button class="bouton bouton-principal" id="boutonSauverDevis">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Vue imprimable -->
+<div id="vueImprimable">
+  <div style="padding:20px">
+    <h2 style="font-family:'Oswald',sans-serif;margin-bottom:4px">KSB Garage — Devis</h2>
+    <p id="pdfNumero" style="font-family:'JetBrains Mono',monospace;color:#6B6A63;margin-bottom:16px"></p>
+    <p><strong>Client :</strong> <span id="pdfClient"></span></p>
+    <p><strong>Véhicule :</strong> <span id="pdfVehicule"></span></p>
+    <p><strong>Valide jusqu'au :</strong> <span id="pdfValidite"></span></p>
+    <table>
+      <thead><tr><th>Désignation</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead>
+      <tbody id="pdfLignes"></tbody>
+    </table>
+    <p style="margin-top:16px;font-size:16px"><strong>Total général : <span id="pdfTotal"></span></strong></p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import {
+  protegerPage, deconnecter, surChangementAuth, surChangementReseau,
+  prochainNumero, formaterFCFA, calculerMargePct, journaliser,
+  collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, db
+} from './shared.js';
+
+protegerPage();
+
+surChangementAuth((utilisateur) => {
+  if (utilisateur) document.getElementById('emailUtilisateur').textContent = utilisateur.email;
+});
+document.getElementById('boutonDeconnexion').addEventListener('click', async () => {
+  await deconnecter();
+  window.location.href = 'login.html';
+});
+surChangementReseau((enLigne) => {
+  const indicateur = document.getElementById('indicateurReseau');
+  const texte = document.getElementById('texteReseau');
+  if (enLigne) { indicateur.classList.remove('hors-ligne'); texte.textContent = 'En ligne'; }
+  else { indicateur.classList.add('hors-ligne'); texte.textContent = 'Hors ligne'; }
+});
+
+function toast(message, type) {
+  const el = document.getElementById('toast');
+  el.textContent = message;
+  el.className = 'visible ' + (type || 'ok');
+  setTimeout(() => { el.className = ''; }, 3400);
+}
+function echapper(texte) {
+  if (texte === null || texte === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = String(texte);
+  return div.innerHTML;
+}
+function ouvrirModale(id) { document.getElementById(id).classList.add('ouverte'); }
+function fermerModale(id) { document.getElementById(id).classList.remove('ouverte'); }
+document.querySelectorAll('[data-fermer]').forEach((btn) => btn.addEventListener('click', () => fermerModale(btn.dataset.fermer)));
+document.querySelectorAll('.fond-modale').forEach((fond) => {
+  fond.addEventListener('click', (e) => { if (e.target === fond) fond.classList.remove('ouverte'); });
+});
+
+// --- Données en direct ---
+let clients = [];
+let vehicules = [];
+let dossiers = [];
+let conducteurs = [];
+let devisListe = [];
+
+onSnapshot(collection(db, 'clients'), (snap) => {
+  clients = []; snap.forEach((d) => clients.push({ id: d.id, ...d.data() }));
+  rendreDevis();
+});
+onSnapshot(collection(db, 'vehicules'), (snap) => {
+  vehicules = []; snap.forEach((d) => vehicules.push({ id: d.id, ...d.data() }));
+  rendreDevis();
+});
+onSnapshot(collection(db, 'conducteurs'), (snap) => {
+  conducteurs = []; snap.forEach((d) => conducteurs.push({ id: d.id, ...d.data() }));
+});
+onSnapshot(collection(db, 'dossiers'), (snap) => {
+  dossiers = []; snap.forEach((d) => dossiers.push({ id: d.id, ...d.data() }));
+  dossiers.sort((a, b) => (b.numero || '').localeCompare(a.numero || ''));
+  remplirSelectDossiers();
+  rendreDevis();
+  ouvrirNouveauDevisDepuisURL();
+});
+onSnapshot(collection(db, 'devis'), (snap) => {
+  devisListe = []; snap.forEach((d) => devisListe.push({ id: d.id, ...d.data() }));
+  devisListe.sort((a, b) => (b.numero || '').localeCompare(a.numero || ''));
+  rendreDevis();
+});
+
+function nomClient(clientId) { const c = clients.find((x) => x.id === clientId); return c ? c.nom : '—'; }
+function nomVehicule(vehiculeId) { const v = vehicules.find((x) => x.id === vehiculeId); return v ? v.immatriculation + (v.marque ? ' — ' + v.marque : '') : '—'; }
+function nomConducteur(conducteurId) { const c = conducteurs.find((x) => x.id === conducteurId); return c ? c.nom + (c.fonction ? ' — ' + c.fonction : '') : 'Non affecté'; }
+function nomDossier(dossierId) { const d = dossiers.find((x) => x.id === dossierId); return d ? d.numero : '—'; }
+
+function remplirSelectDossiers() {
+  const select = document.getElementById('devisDossierId');
+  const valeurActuelle = select.value;
+  select.innerHTML = '<option value="">-- Sélectionner un dossier --</option>' +
+    dossiers.map((d) => `<option value="${d.id}">${echapper(d.numero)} — ${echapper(nomClient(d.clientId))} — ${echapper(nomVehicule(d.vehiculeId))}</option>`).join('');
+  if (valeurActuelle) select.value = valeurActuelle;
+}
+
+document.getElementById('devisDossierId').addEventListener('change', (e) => {
+  afficherInfoDossier(e.target.value);
+});
+
+function afficherInfoDossier(dossierId) {
+  const bloc = document.getElementById('blocInfoDossier');
+  const d = dossiers.find((x) => x.id === dossierId);
+  if (!d) { bloc.style.display = 'none'; return; }
+  document.getElementById('infoClient').textContent = nomClient(d.clientId);
+  document.getElementById('infoVehicule').textContent = nomVehicule(d.vehiculeId);
+  document.getElementById('infoConducteur').textContent = nomConducteur(d.conducteurId);
+  bloc.style.display = 'block';
+}
+
+// --- Badges statut ---
+const COULEURS_STATUT_DEVIS = {
+  'Brouillon': '#F1EFE9;color:#4A4941',
+  'Envoyé': '#DBEAFE;color:#1E40AF',
+  'Validé': '#D1FAE5;color:#065F46',
+  'Refusé': '#FCEBEB;color:#D64545',
+};
+function badgeStatut(statut) {
+  const style = COULEURS_STATUT_DEVIS[statut] || '#F1EFE9;color:#4A4941';
+  return `<span class="badge-statut" style="background:${style.split(';')[0]};${style.split(';')[1]}">${echapper(statut || '—')}</span>`;
+}
+
+// --- Rendu tableau principal ---
+function rendreDevis() {
+  const terme = (document.getElementById('rechercheDevis').value || '').toLowerCase();
+  const filtres = devisListe.filter((dv) => {
+    const d = dossiers.find((x) => x.id === dv.dossierId) || {};
+    const texte = ((dv.numero || '') + (d.numero || '') + nomClient(d.clientId) + nomVehicule(d.vehiculeId)).toLowerCase();
+    return !terme || texte.includes(terme);
+  });
+  const corps = document.getElementById('corpsTableDevis');
+  document.getElementById('videDevis').style.display = filtres.length ? 'none' : 'block';
+  corps.innerHTML = filtres.map((dv) => {
+    const d = dossiers.find((x) => x.id === dv.dossierId) || {};
+    const margeGlobale = calculerMargeGlobaleTexte(dv);
+    return `<tr>
+      <td><strong style="font-family:'JetBrains Mono',monospace;font-size:12px">${echapper(dv.numero)}</strong></td>
+      <td>${echapper(d.numero || '—')}</td>
+      <td>${echapper(nomClient(d.clientId))}</td>
+      <td>${echapper(nomVehicule(d.vehiculeId))}</td>
+      <td>${badgeStatut(dv.statut)}</td>
+      <td>${formaterFCFA(dv.totalGeneral || 0)}</td>
+      <td>${margeGlobale}</td>
+      <td>
+        <button class="lien-action modifier" data-modifier-devis="${dv.id}">Modifier</button>
+        <button class="lien-action supprimer" data-supprimer-devis="${dv.id}">Supprimer</button>
+      </td>
+    </tr>`;
+  }).join('');
+  corps.querySelectorAll('[data-modifier-devis]').forEach((b) => b.addEventListener('click', () => ouvrirDevisPourModification(b.dataset.modifierDevis)));
+  corps.querySelectorAll('[data-supprimer-devis]').forEach((b) => b.addEventListener('click', () => supprimerDevis(b.dataset.supprimerDevis)));
+}
+document.getElementById('rechercheDevis').addEventListener('input', rendreDevis);
+
+function calculerMargeGlobaleTexte(dv) {
+  const coutTotal = (dv.coutTotalPieces || 0) + (dv.coutTotalMainOeuvre || 0);
+  const venteTotal = dv.totalGeneral || 0;
+  if (!coutTotal) return '—';
+  const pct = calculerMargePct(coutTotal, venteTotal);
+  return `<span class="${pct >= 0 ? '' : ''}">${pct}%</span>`;
+}
+
+// --- Gestion des lignes (état local pendant l'édition) ---
+let lignesCourantes = [];
+let compteurLigneLocal = 0;
+let ouvertureAutoDejaFaite = false;
+
+function nouvelleLigneVide(categorie) {
+  compteurLigneLocal += 1;
+  return { idLocal: 'l' + compteurLigneLocal, categorie: categorie || 'Piece', designation: '', quantite: 1, coutUnitaire: 0, prixVenteUnitaire: 0 };
+}
+
+function rendreLignes() {
+  const corps = document.getElementById('corpsLignesDevis');
+  corps.innerHTML = lignesCourantes.map((l) => `
+    <tr data-ligne="${l.idLocal}">
+      <td>
+        <select class="champ-ligne-categorie" data-champ="categorie">
+          <option value="Piece" ${l.categorie === 'Piece' ? 'selected' : ''}>Pièce</option>
+          <option value="MainOeuvre" ${l.categorie === 'MainOeuvre' ? 'selected' : ''}>Main d'œuvre</option>
+        </select>
+      </td>
+      <td><input type="text" data-champ="designation" value="${echapper(l.designation)}" placeholder="Ex : Plaquettes de frein avant"></td>
+      <td><input type="number" min="0" step="1" data-champ="quantite" value="${l.quantite}"></td>
+      <td><input type="number" min="0" data-champ="coutUnitaire" value="${l.coutUnitaire}"></td>
+      <td><input type="number" min="0" data-champ="prixVenteUnitaire" value="${l.prixVenteUnitaire}"></td>
+      <td class="col-total">${formaterFCFA((Number(l.quantite) || 0) * (Number(l.prixVenteUnitaire) || 0))}</td>
+      <td class="col-suppr"><button class="bouton-suppr-ligne" data-suppr-ligne="${l.idLocal}" title="Supprimer la ligne">&times;</button></td>
+    </tr>
+  `).join('');
+  corps.querySelectorAll('[data-suppr-ligne]').forEach((b) => {
+    b.addEventListener('click', () => {
+      lignesCourantes = lignesCourantes.filter((l) => l.idLocal !== b.dataset.supprLigne);
+      rendreLignes();
+      recalculerResume();
+    });
+  });
+}
+
+// Délégation d'événements : un seul écouteur pour tous les champs de toutes les lignes
+document.getElementById('corpsLignesDevis').addEventListener('input', (e) => {
+  const champ = e.target.dataset.champ;
+  if (!champ) return;
+  const tr = e.target.closest('tr');
+  const idLocal = tr.dataset.ligne;
+  const ligne = lignesCourantes.find((l) => l.idLocal === idLocal);
+  if (!ligne) return;
+  if (champ === 'quantite' || champ === 'coutUnitaire' || champ === 'prixVenteUnitaire') {
+    ligne[champ] = e.target.value === '' ? 0 : Number(e.target.value);
+    const cellTotal = tr.querySelector('.col-total');
+    cellTotal.textContent = formaterFCFA((Number(ligne.quantite) || 0) * (Number(ligne.prixVenteUnitaire) || 0));
+  } else {
+    ligne[champ] = e.target.value;
+  }
+  recalculerResume();
+});
+document.getElementById('corpsLignesDevis').addEventListener('change', (e) => {
+  if (e.target.dataset.champ === 'categorie') {
+    const tr = e.target.closest('tr');
+    const ligne = lignesCourantes.find((l) => l.idLocal === tr.dataset.ligne);
+    if (ligne) { ligne.categorie = e.target.value; recalculerResume(); }
+  }
+});
+
+document.getElementById('boutonAjouterLigne').addEventListener('click', () => {
+  lignesCourantes.push(nouvelleLigneVide());
+  rendreLignes();
+  recalculerResume();
+});
+
+function recalculerResume() {
+  let sousTotalPieces = 0, coutTotalPieces = 0, sousTotalMainOeuvre = 0, coutTotalMainOeuvre = 0;
+  lignesCourantes.forEach((l) => {
+    const qte = Number(l.quantite) || 0;
+    const cout = qte * (Number(l.coutUnitaire) || 0);
+    const vente = qte * (Number(l.prixVenteUnitaire) || 0);
+    if (l.categorie === 'MainOeuvre') { sousTotalMainOeuvre += vente; coutTotalMainOeuvre += cout; }
+    else { sousTotalPieces += vente; coutTotalPieces += cout; }
+  });
+  const totalGeneral = sousTotalPieces + sousTotalMainOeuvre;
+  document.getElementById('resumeSousTotalPieces').textContent = formaterFCFA(sousTotalPieces);
+  document.getElementById('resumeSousTotalMainOeuvre').textContent = formaterFCFA(sousTotalMainOeuvre);
+  document.getElementById('resumeTotalGeneral').textContent = formaterFCFA(totalGeneral);
+
+  const margePieces = coutTotalPieces ? calculerMargePct(coutTotalPieces, sousTotalPieces) : null;
+  const margeMainOeuvre = coutTotalMainOeuvre ? calculerMargePct(coutTotalMainOeuvre, sousTotalMainOeuvre) : null;
+  document.getElementById('resumeMargePieces').innerHTML = margePieces === null ? '<span class="marge-nulle">— (coût non renseigné)</span>' : `<span class="marge-positive">${margePieces}%</span>`;
+  document.getElementById('resumeMargeMainOeuvre').innerHTML = margeMainOeuvre === null ? '<span class="marge-nulle">— (coût non renseigné)</span>' : `<span class="marge-positive">${margeMainOeuvre}%</span>`;
+
+  return { sousTotalPieces, coutTotalPieces, sousTotalMainOeuvre, coutTotalMainOeuvre, totalGeneral };
+}
+
+// --- Ouverture / réinitialisation du formulaire ---
+function reinitialiserFormulaireDevis() {
+  document.getElementById('devisId').value = '';
+  document.getElementById('devisDossierId').value = '';
+  document.getElementById('blocInfoDossier').style.display = 'none';
+  document.getElementById('devisStatut').value = 'Brouillon';
+  const dansQuinzeJours = new Date();
+  dansQuinzeJours.setDate(dansQuinzeJours.getDate() + 15);
+  document.getElementById('devisValidite').value = dansQuinzeJours.toISOString().slice(0, 10);
+  document.getElementById('devisNotes').value = '';
+  lignesCourantes = [nouvelleLigneVide('Piece'), nouvelleLigneVide('MainOeuvre')];
+  rendreLignes();
+  recalculerResume();
+}
+
+document.getElementById('boutonNouveauDevis').addEventListener('click', () => {
+  reinitialiserFormulaireDevis();
+  document.getElementById('titreModaleDevis').textContent = 'Nouveau devis';
+  ouvrirModale('modaleDevis');
+});
+
+function ouvrirNouveauDevisDepuisURL() {
+  if (ouvertureAutoDejaFaite) return;
+  const idDossier = new URLSearchParams(window.location.search).get('dossier');
+  if (!idDossier) return;
+  const dossierExiste = dossiers.some((d) => d.id === idDossier);
+  if (!dossierExiste) return; // pas encore chargé, on réessaiera au prochain snapshot
+  ouvertureAutoDejaFaite = true;
+  reinitialiserFormulaireDevis();
+  document.getElementById('devisDossierId').value = idDossier;
+  afficherInfoDossier(idDossier);
+  document.getElementById('titreModaleDevis').textContent = 'Nouveau devis';
+  ouvrirModale('modaleDevis');
+}
+
+function ouvrirDevisPourModification(id) {
+  const dv = devisListe.find((x) => x.id === id);
+  if (!dv) return;
+  document.getElementById('devisId').value = dv.id;
+  document.getElementById('devisDossierId').value = dv.dossierId || '';
+  afficherInfoDossier(dv.dossierId);
+  document.getElementById('devisStatut').value = dv.statut || 'Brouillon';
+  document.getElementById('devisValidite').value = dv.validite || '';
+  document.getElementById('devisNotes').value = dv.notes || '';
+  lignesCourantes = (dv.lignes || []).map((l) => { compteurLigneLocal += 1; return { ...l, idLocal: 'l' + compteurLigneLocal }; });
+  if (!lignesCourantes.length) lignesCourantes = [nouvelleLigneVide('Piece')];
+  rendreLignes();
+  recalculerResume();
+  document.getElementById('titreModaleDevis').textContent = 'Devis ' + dv.numero;
+  ouvrirModale('modaleDevis');
+}
+
+// --- Sauvegarde ---
+async function construireDonneesDevis() {
+  const dossierId = document.getElementById('devisDossierId').value;
+  if (!dossierId) throw new Error('Sélectionnez un dossier');
+  const lignesValides = lignesCourantes.filter((l) => l.designation.trim());
+  if (!lignesValides.length) throw new Error('Ajoutez au moins une ligne avec une désignation');
+  const resume = recalculerResume();
+  const dossier = dossiers.find((x) => x.id === dossierId) || {};
+  return {
+    dossierId,
+    clientId: dossier.clientId || null,
+    vehiculeId: dossier.vehiculeId || null,
+    statut: document.getElementById('devisStatut').value,
+    validite: document.getElementById('devisValidite').value,
+    notes: document.getElementById('devisNotes').value.trim(),
+    lignes: lignesValides.map(({ idLocal, ...reste }) => reste),
+    sousTotalPieces: resume.sousTotalPieces,
+    coutTotalPieces: resume.coutTotalPieces,
+    sousTotalMainOeuvre: resume.sousTotalMainOeuvre,
+    coutTotalMainOeuvre: resume.coutTotalMainOeuvre,
+    totalGeneral: resume.totalGeneral,
+  };
+}
+
+document.getElementById('boutonSauverDevis').addEventListener('click', async () => {
+  let donnees;
+  try {
+    donnees = await construireDonneesDevis();
+  } catch (e) {
+    toast(e.message, 'ko');
+    return;
+  }
+  const id = document.getElementById('devisId').value;
+  try {
+    if (id) {
+      await updateDoc(doc(db, 'devis', id), donnees);
+      const idx = devisListe.findIndex((d) => d.id === id);
+      if (idx !== -1) devisListe[idx] = { ...devisListe[idx], ...donnees };
+      await journaliser('devis', 'modification', id, { total: donnees.totalGeneral });
+      toast('Devis mis à jour');
+    } else {
+      const numero = await prochainNumero('DEV');
+      donnees.numero = numero;
+      const ref = await addDoc(collection(db, 'devis'), { ...donnees, creeLe: serverTimestamp() });
+      devisListe.unshift({ id: ref.id, ...donnees });
+      await journaliser('devis', 'creation', ref.id, { numero, total: donnees.totalGeneral });
+      toast('Devis ' + numero + ' créé');
+    }
+    // Synchronise le montant du devis avec le dossier lié
+    if (donnees.dossierId) {
+      try {
+        await updateDoc(doc(db, 'dossiers', donnees.dossierId), { montantDevis: donnees.totalGeneral });
+        const idxDossier = dossiers.findIndex((d) => d.id === donnees.dossierId);
+        if (idxDossier !== -1) dossiers[idxDossier].montantDevis = donnees.totalGeneral;
+      } catch (e) { /* pas bloquant si la synchro échoue */ }
+    }
+    rendreDevis();
+    fermerModale('modaleDevis');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'ko');
+  }
+});
+
+async function supprimerDevis(id) {
+  if (!confirm('Supprimer ce devis ?')) return;
+  try {
+    await deleteDoc(doc(db, 'devis', id));
+    devisListe = devisListe.filter((d) => d.id !== id);
+    rendreDevis();
+    await journaliser('devis', 'suppression', id, {});
+    toast('Devis supprimé');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'ko');
+  }
+}
+
+// --- Impression ---
+document.getElementById('boutonImprimerDevis').addEventListener('click', async () => {
+  let donnees;
+  try {
+    donnees = await construireDonneesDevis();
+  } catch (e) {
+    toast(e.message, 'ko');
+    return;
+  }
+  const id = document.getElementById('devisId').value;
+  const numeroAffiche = id ? (devisListe.find((d) => d.id === id) || {}).numero : 'Brouillon (non enregistré)';
+  document.getElementById('pdfNumero').textContent = 'N° ' + (numeroAffiche || 'Brouillon');
+  document.getElementById('pdfClient').textContent = nomClient(donnees.clientId);
+  document.getElementById('pdfVehicule').textContent = nomVehicule(donnees.vehiculeId);
+  document.getElementById('pdfValidite').textContent = donnees.validite || '—';
+  document.getElementById('pdfLignes').innerHTML = donnees.lignes.map((l) => `
+    <tr>
+      <td>${echapper(l.designation)}${l.categorie === 'MainOeuvre' ? ' <em>(main d\'œuvre)</em>' : ''}</td>
+      <td>${l.quantite}</td>
+      <td>${formaterFCFA(l.prixVenteUnitaire)}</td>
+      <td>${formaterFCFA(l.quantite * l.prixVenteUnitaire)}</td>
+    </tr>`).join('');
+  document.getElementById('pdfTotal').textContent = formaterFCFA(donnees.totalGeneral);
+  setTimeout(() => window.print(), 300);
+});
+</script>
+</body>
+</html>

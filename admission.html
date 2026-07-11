@@ -665,8 +665,8 @@ document.getElementById('boutonCreerDevis').addEventListener('click', async (e) 
   bouton.disabled = true;
   try {
     const dossier = await enregistrerAdmission();
-    toast('Dossier ' + dossier.numero + ' créé. Le module Devis arrive prochainement — vous pourrez le lancer depuis ici.', 'info');
-    setTimeout(() => { window.location.href = 'gestion.html#dossiers'; }, 2000);
+    toast('Dossier ' + dossier.numero + ' créé — ouverture du devis...', 'ok');
+    setTimeout(() => { window.location.href = 'devis.html?dossier=' + dossier.id; }, 1000);
   } catch (err) {
     toast(err.message, 'ko');
     bouton.disabled = false;
