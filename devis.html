@@ -349,12 +349,13 @@ onSnapshot(collection(db, 'dossiers'), (snap) => {
   dossiers.sort((a, b) => (b.numero || '').localeCompare(a.numero || ''));
   remplirSelectDossiers();
   rendreDevis();
-  ouvrirNouveauDevisDepuisURL();
+  ouvrirDepuisURL();
 });
 onSnapshot(collection(db, 'devis'), (snap) => {
   devisListe = []; snap.forEach((d) => devisListe.push({ id: d.id, ...d.data() }));
   devisListe.sort((a, b) => (b.numero || '').localeCompare(a.numero || ''));
   rendreDevis();
+  ouvrirDepuisURL();
 });
 
 function nomClient(clientId) { const c = clients.find((x) => x.id === clientId); return c ? c.nom : '—'; }
@@ -547,13 +548,19 @@ document.getElementById('boutonNouveauDevis').addEventListener('click', () => {
   ouvrirModale('modaleDevis');
 });
 
-function ouvrirNouveauDevisDepuisURL() {
+function ouvrirDepuisURL() {
   if (ouvertureAutoDejaFaite) return;
   const idDossier = new URLSearchParams(window.location.search).get('dossier');
   if (!idDossier) return;
   const dossierExiste = dossiers.some((d) => d.id === idDossier);
   if (!dossierExiste) return; // pas encore chargé, on réessaiera au prochain snapshot
   ouvertureAutoDejaFaite = true;
+  const devisExistant = devisListe.find((dv) => dv.dossierId === idDossier);
+  if (devisExistant) {
+    ouvrirDevisPourModification(devisExistant.id);
+    toast('Devis existant ' + devisExistant.numero + ' ouvert pour ce dossier', 'ok');
+    return;
+  }
   reinitialiserFormulaireDevis();
   document.getElementById('devisDossierId').value = idDossier;
   afficherInfoDossier(idDossier);
